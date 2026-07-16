@@ -41,6 +41,16 @@ yarn-error.*
 /ios
 /android
 
+# build artifacts
+*.apk
+*.aab
+coverage/
+
+# editors
+.vscode/
+.idea/
+*.log
+
 # AI tooling
 .claude/
 CLAUDE.md
