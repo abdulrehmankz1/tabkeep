@@ -1,47 +1,30 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { MockExpense } from '../data/mockExpenses';
-import { MockPerson } from '../data/mockPeople';
+import { fetchAllExpensesRaw, replaceAllExpenses } from '../db/repositories/expenses';
+import { fetchAllPeopleRaw, replaceAllPeople } from '../db/repositories/people';
 import { useExpensesStore } from '../store/useExpensesStore';
 import { usePeopleStore } from '../store/usePeopleStore';
-import { ThemePreference, useSettingsStore } from '../store/useSettingsStore';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { BackupPayload, isValidBackupPayload } from './backupPayload';
+
+export { BackupPayload, isValidBackupPayload } from './backupPayload';
 
 const BACKUP_VERSION = 1;
 
-export interface BackupPayload {
-  version: number;
-  createdAt: string;
-  expenses: MockExpense[];
-  people: MockPerson[];
-  settings: { currencyCode: string; themePreference: ThemePreference };
-}
-
-export function createBackupPayload(): BackupPayload {
+export async function createBackupPayload(): Promise<BackupPayload> {
   const settings = useSettingsStore.getState();
+  const [expenses, people] = await Promise.all([fetchAllExpensesRaw(), fetchAllPeopleRaw()]);
   return {
     version: BACKUP_VERSION,
     createdAt: new Date().toISOString(),
-    expenses: useExpensesStore.getState().expenses,
-    people: usePeopleStore.getState().people,
+    expenses,
+    people,
     settings: { currencyCode: settings.currencyCode, themePreference: settings.themePreference },
   };
 }
 
-export function isValidBackupPayload(data: unknown): data is BackupPayload {
-  if (!data || typeof data !== 'object') return false;
-  const d = data as Record<string, unknown>;
-  return (
-    Array.isArray(d.expenses) &&
-    Array.isArray(d.people) &&
-    typeof d.settings === 'object' &&
-    d.settings !== null &&
-    typeof (d.settings as Record<string, unknown>).currencyCode === 'string' &&
-    typeof (d.settings as Record<string, unknown>).themePreference === 'string'
-  );
-}
-
 export async function exportBackup(): Promise<void> {
-  const payload = createBackupPayload();
+  const payload = await createBackupPayload();
   const file = new File(Paths.cache, 'tabkeep-backup.json');
   file.create({ overwrite: true });
   file.write(JSON.stringify(payload, null, 2));
@@ -61,11 +44,11 @@ export async function importBackup(): Promise<'restored' | 'canceled'> {
     throw new Error('This file is not a valid TabKeep backup.');
   }
 
-  useExpensesStore.setState({ expenses: data.expenses });
-  usePeopleStore.setState({ people: data.people });
+  await Promise.all([replaceAllExpenses(data.expenses), replaceAllPeople(data.people)]);
   useSettingsStore.setState({
     currencyCode: data.settings.currencyCode,
     themePreference: data.settings.themePreference,
   });
+  await Promise.all([useExpensesStore.getState().hydrate(), usePeopleStore.getState().hydrate()]);
   return 'restored';
 }
