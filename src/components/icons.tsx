@@ -32,6 +32,12 @@ const PATHS: Record<string, string[]> = {
   share: ['M8.6 13.5l6.8 3.9', 'M15.4 6.6l-6.8 3.9'],
   x: ['M6 6l12 12', 'M18 6l-12 12'],
   image: ['M21 16l-5.5-5.5a1.5 1.5 0 0 0-2.1 0L4 19'],
+  currency: ['M9 8.5h4a2.2 2.2 0 0 1 0 4.4H9', 'M9 8.5v7', 'M9 12.9h4'],
+  theme: ['M20 14.5a8 8 0 1 1-9.5-9.4 6.5 6.5 0 0 0 9.5 9.4z'],
+  sync: ['M3 12a9 9 0 0 1 15-6.7L21 8', 'M21 3v5h-5', 'M21 12a9 9 0 0 1-15 6.7L3 16', 'M3 21v-5h5'],
+  info: ['M12 11v6', 'M12 7h.01'],
+  mail: ['M3 7l9 6 9-6'],
+  link: ['M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6', 'M15 3h6v6', 'M10 14L21 3'],
 };
 
 const CIRCLES: Record<string, { cx: number; cy: number; r: number }[]> = {
@@ -40,6 +46,8 @@ const CIRCLES: Record<string, { cx: number; cy: number; r: number }[]> = {
   camera: [{ cx: 12, cy: 13.5, r: 3.5 }],
   search: [{ cx: 10.5, cy: 10.5, r: 6.5 }],
   image: [{ cx: 8.5, cy: 8.5, r: 1.5 }],
+  currency: [{ cx: 12, cy: 12, r: 8.5 }],
+  info: [{ cx: 12, cy: 12, r: 9 }],
   share: [
     { cx: 6.5, cy: 12, r: 2.5 },
     { cx: 18, cy: 5, r: 2.5 },
@@ -53,6 +61,7 @@ const RECTS: Record<string, { x: number; y: number; width: number; height: numbe
   building: [{ x: 5, y: 3, width: 14, height: 18, rx: 1 }],
   truck: [{ x: 2.5, y: 7, width: 11, height: 9, rx: 1 }],
   image: [{ x: 3, y: 3, width: 18, height: 18, rx: 2 }],
+  mail: [{ x: 3, y: 5, width: 18, height: 14, rx: 2 }],
 };
 
 export type IconName = keyof typeof PATHS;
