@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { EmptyState } from '../../src/components/EmptyState';
 import { ErrorState } from '../../src/components/ErrorState';
 import { Icon } from '../../src/components/icons';
 import { ReportsLoadingSkeleton } from '../../src/components/ReportsLoadingSkeleton';
 import { avatarColorFromName, initialsFromName } from '../../src/lib/avatarColor';
 import { CATEGORY_META } from '../../src/lib/categoryMeta';
+import { haptics } from '../../src/lib/haptics';
 import { formatAmount } from '../../src/lib/money';
 import { daysForAverage, isInMonth, monthName, monthYearLabel } from '../../src/lib/monthFilter';
 import { safePush } from '../../src/lib/navGuard';
@@ -14,7 +16,8 @@ import { spendTrend } from '../../src/lib/trend';
 import { useMockRefresh } from '../../src/lib/useMockRefresh';
 import { useExpensesStore } from '../../src/store/useExpensesStore';
 import { usePeopleStore } from '../../src/store/usePeopleStore';
-import { darkColors, radius, spacing } from '../../src/theme';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
+import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
 type Status = 'loading' | 'success' | 'error';
 type Tab = 'Overview' | 'Categories' | 'Trends';
@@ -23,6 +26,9 @@ const TABS: Tab[] = ['Overview', 'Categories', 'Trends'];
 export default function Reports() {
   const allExpenses = useExpensesStore((s) => s.expenses);
   const allPeople = usePeopleStore((s) => s.people);
+  useSettingsStore((s) => s.currencyCode);
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [status, setStatus] = useState<Status>('loading');
   const [tab, setTab] = useState<Tab>('Overview');
   const [monthOffset, setMonthOffset] = useState(0);
@@ -130,28 +136,36 @@ export default function Reports() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.textSecondary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecondary} />}
       >
         <Text style={styles.title}>Reports</Text>
 
         <View style={styles.monthNav}>
           <Pressable onPress={() => setMonthOffset((o) => o + 1)} hitSlop={8}>
-            <Icon name="chevronleft" size={18} color={darkColors.textPrimary} />
+            <Icon name="chevronleft" size={18} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.monthNavLabel}>{monthYearLabel(monthOffset)}</Text>
           <Pressable onPress={() => setMonthOffset((o) => Math.max(0, o - 1))} hitSlop={8} disabled={monthOffset === 0}>
-            <Icon name="chevronright" size={18} color={monthOffset === 0 ? darkColors.border : darkColors.textPrimary} />
+            <Icon name="chevronright" size={18} color={monthOffset === 0 ? colors.border : colors.textPrimary} />
           </Pressable>
         </View>
 
         <View style={styles.tabs}>
           {TABS.map((t) => (
-            <Pressable key={t} style={[styles.tabBtn, tab === t && styles.tabBtnActive]} onPress={() => setTab(t)}>
+            <Pressable
+              key={t}
+              style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
+              onPress={() => {
+                haptics.select();
+                setTab(t);
+              }}
+            >
               <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t}</Text>
             </Pressable>
           ))}
         </View>
 
+        <Animated.View key={tab} entering={FadeIn.duration(180)}>
         {isEmpty ? (
           <EmptyState
             icon="chart"
@@ -167,8 +181,8 @@ export default function Reports() {
                 <Text style={styles.label}>{monthOffset === 0 ? 'This month' : monthYearLabel(monthOffset)}</Text>
                 <Text style={styles.amount}>{formatAmount(monthTotal)}</Text>
                 {trend && (
-                  <View style={[styles.trendPill, { borderColor: trend.good ? darkColors.moneyIn : darkColors.moneyOut }]}>
-                    <Text style={[styles.trendPillText, { color: trend.good ? darkColors.moneyIn : darkColors.moneyOut }]}>
+                  <View style={[styles.trendPill, { borderColor: trend.good ? colors.moneyIn : colors.moneyOut }]}>
+                    <Text style={[styles.trendPillText, { color: trend.good ? colors.moneyIn : colors.moneyOut }]}>
                       {trend.text}
                     </Text>
                   </View>
@@ -195,11 +209,11 @@ export default function Reports() {
               <View style={styles.row}>
                 <View style={styles.udhaarStat}>
                   <Text style={styles.label}>Given</Text>
-                  <Text style={[styles.smallAmount, { color: darkColors.moneyOut }]}>{formatAmount(given)}</Text>
+                  <Text style={[styles.smallAmount, { color: colors.moneyOut }]}>{formatAmount(given)}</Text>
                 </View>
                 <View style={styles.udhaarStat}>
                   <Text style={styles.label}>Received back</Text>
-                  <Text style={[styles.smallAmount, { color: darkColors.moneyIn }]}>{formatAmount(received)}</Text>
+                  <Text style={[styles.smallAmount, { color: colors.moneyIn }]}>{formatAmount(received)}</Text>
                 </View>
                 <View style={styles.udhaarStat}>
                   <Text style={styles.label}>Outstanding</Text>
@@ -222,7 +236,7 @@ export default function Reports() {
                       <Text
                         style={[
                           styles.personAmount,
-                          { color: p.balance >= 0 ? darkColors.moneyIn : darkColors.moneyOut },
+                          { color: p.balance >= 0 ? colors.moneyIn : colors.moneyOut },
                         ]}
                       >
                         {formatAmount(Math.abs(p.balance))}
@@ -286,228 +300,230 @@ export default function Reports() {
             )}
           </View>
         )}
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: darkColors.bgPrimary,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    color: darkColors.textPrimary,
-    fontSize: 24,
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: spacing.md,
-  },
-  monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  monthNavLabel: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    minWidth: 130,
-    textAlign: 'center',
-  },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.full,
-    padding: 4,
-    marginBottom: spacing.md,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    alignItems: 'center',
-  },
-  tabBtnActive: {
-    backgroundColor: darkColors.bgElevated,
-  },
-  tabText: {
-    color: darkColors.textSecondary,
-    fontSize: 13.5,
-  },
-  tabTextActive: {
-    color: darkColors.textPrimary,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.sm + 4,
-    marginBottom: spacing.md,
-  },
-  label: {
-    color: darkColors.textSecondary,
-    fontSize: 12,
-    marginBottom: spacing.xs,
-  },
-  amount: {
-    color: darkColors.textPrimary,
-    fontSize: 19,
-    fontFamily: 'Inter_700Bold',
-    fontVariant: ['tabular-nums'],
-  },
-  trendPill: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    marginTop: spacing.xs,
-  },
-  trendPillText: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-  },
-  bigCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.sm + 4,
-    marginBottom: spacing.md,
-  },
-  bigCardNote: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-    marginTop: 2,
-  },
-  bigCardAmount: {
-    color: darkColors.textPrimary,
-    fontSize: 17,
-    fontFamily: 'Inter_600SemiBold',
-    fontVariant: ['tabular-nums'],
-  },
-  udhaarCard: {
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.md,
-  },
-  udhaarTitle: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: spacing.sm,
-  },
-  udhaarStat: {
-    flex: 1,
-  },
-  smallAmount: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    fontVariant: ['tabular-nums'],
-  },
-  peopleList: {
-    marginTop: spacing.md,
-  },
-  personRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm + 2,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
-  },
-  personRowFirst: {
-    borderTopWidth: 0,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  personName: {
-    flex: 1,
-    color: darkColors.textPrimary,
-    fontSize: 15,
-  },
-  personAmount: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    fontVariant: ['tabular-nums'],
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  categoryRowLast: {
-    marginBottom: 0,
-  },
-  categoryBody: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  categoryHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  categoryIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.bgElevated,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: radius.full,
-    backgroundColor: darkColors.textPrimary,
-  },
-  trendRow: {
-    marginBottom: spacing.md,
-    gap: spacing.xs,
-  },
-  trendLabel: {
-    color: darkColors.textPrimary,
-    fontSize: 13.5,
-  },
-  trendAmount: {
-    color: darkColors.textSecondary,
-    fontSize: 12.5,
-    fontVariant: ['tabular-nums'],
-  },
-  emptyText: {
-    color: darkColors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingVertical: spacing.md,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.bgPrimary,
+    },
+    content: {
+      padding: spacing.md,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      color: colors.textPrimary,
+      fontSize: 24,
+      fontFamily: 'Inter_600SemiBold',
+      marginBottom: spacing.md,
+    },
+    monthNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    monthNavLabel: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+      minWidth: 130,
+      textAlign: 'center',
+    },
+    tabs: {
+      flexDirection: 'row',
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.full,
+      padding: 4,
+      marginBottom: spacing.md,
+    },
+    tabBtn: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      alignItems: 'center',
+    },
+    tabBtnActive: {
+      backgroundColor: colors.bgElevated,
+    },
+    tabText: {
+      color: colors.textSecondary,
+      fontSize: 13.5,
+    },
+    tabTextActive: {
+      color: colors.textPrimary,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    card: {
+      flex: 1,
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.sm + 4,
+      marginBottom: spacing.md,
+    },
+    label: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginBottom: spacing.xs,
+    },
+    amount: {
+      color: colors.textPrimary,
+      fontSize: 19,
+      fontFamily: 'Inter_700Bold',
+      fontVariant: ['tabular-nums'],
+    },
+    trendPill: {
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+      marginTop: spacing.xs,
+    },
+    trendPillText: {
+      fontSize: 11,
+      fontFamily: 'Inter_500Medium',
+    },
+    bigCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.sm + 4,
+      marginBottom: spacing.md,
+    },
+    bigCardNote: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      marginTop: 2,
+    },
+    bigCardAmount: {
+      color: colors.textPrimary,
+      fontSize: 17,
+      fontFamily: 'Inter_600SemiBold',
+      fontVariant: ['tabular-nums'],
+    },
+    udhaarCard: {
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.md,
+    },
+    udhaarTitle: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+      marginBottom: spacing.sm,
+    },
+    udhaarStat: {
+      flex: 1,
+    },
+    smallAmount: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+      fontVariant: ['tabular-nums'],
+    },
+    peopleList: {
+      marginTop: spacing.md,
+    },
+    personRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm + 2,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    personRowFirst: {
+      borderTopWidth: 0,
+    },
+    avatar: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      color: '#FFFFFF',
+      fontSize: 12.5,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    personName: {
+      flex: 1,
+      color: colors.textPrimary,
+      fontSize: 15,
+    },
+    personAmount: {
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+      fontVariant: ['tabular-nums'],
+    },
+    categoryRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    categoryRowLast: {
+      marginBottom: 0,
+    },
+    categoryBody: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+    categoryHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    categoryIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 2,
+    },
+    progressTrack: {
+      height: 6,
+      borderRadius: radius.full,
+      backgroundColor: colors.bgElevated,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: radius.full,
+      backgroundColor: colors.textPrimary,
+    },
+    trendRow: {
+      marginBottom: spacing.md,
+      gap: spacing.xs,
+    },
+    trendLabel: {
+      color: colors.textPrimary,
+      fontSize: 13.5,
+    },
+    trendAmount: {
+      color: colors.textSecondary,
+      fontSize: 12.5,
+      fontVariant: ['tabular-nums'],
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      textAlign: 'center',
+      paddingVertical: spacing.md,
+    },
+  });

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -19,8 +19,9 @@ import { TimePickerSheet } from '../src/components/TimePickerSheet';
 import { applyKey, rawToPaisas } from '../src/lib/amountInput';
 import { CATEGORY_META } from '../src/lib/categoryMeta';
 import { dateGroupFor, isoDateFor } from '../src/lib/dateGroup';
+import { haptics } from '../src/lib/haptics';
 import { useExpensesStore } from '../src/store/useExpensesStore';
-import { chipColors, darkColors, radius, spacing } from '../src/theme';
+import { chipColors, radius, spacing, ThemeColors, useTheme } from '../src/theme';
 
 const CATEGORIES = [
   { name: 'Food', icon: 'coffee' as const },
@@ -46,6 +47,8 @@ function formatTime(date: Date) {
 export default function AddExpense() {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [raw, setRaw] = useState('');
   const [categoryIndex, setCategoryIndex] = useState(0);
   const [note, setNote] = useState('');
@@ -65,6 +68,7 @@ export default function AddExpense() {
     const amount = rawToPaisas(raw);
     if (submittingRef.current || amount === 0) return;
     submittingRef.current = true;
+    haptics.success();
     addExpense({
       note: note.trim() || category.name,
       time: formatTime(date),
@@ -103,7 +107,7 @@ export default function AddExpense() {
                 <Text style={styles.categoryName}>{category.name}</Text>
               </View>
               <View style={{ transform: [{ rotate: categoryListOpen ? '180deg' : '0deg' }] }}>
-                <Icon name="chevrondown" size={16} color={darkColors.textSecondary} />
+                <Icon name="chevrondown" size={16} color={colors.textSecondary} />
               </View>
             </Pressable>
 
@@ -122,7 +126,7 @@ export default function AddExpense() {
                       <Icon name={c.icon} size={14} color="#FFFFFF" />
                     </View>
                     <Text style={styles.categoryListText}>{c.name}</Text>
-                    {i === categoryIndex && <Icon name="check" size={16} color={darkColors.textPrimary} />}
+                    {i === categoryIndex && <Icon name="check" size={16} color={colors.textPrimary} />}
                   </Pressable>
                 ))}
               </View>
@@ -157,7 +161,7 @@ export default function AddExpense() {
               value={note}
               onChangeText={setNote}
               placeholder="Add a note (optional)"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               style={styles.noteInput}
             />
 
@@ -173,136 +177,137 @@ export default function AddExpense() {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlayBackdrop: {
-    ...StyleSheet.absoluteFill,
-  },
-  keyboardAvoider: {
-    flexShrink: 1,
-    flexGrow: 0,
-  },
-  sheet: {
-    backgroundColor: darkColors.bgSurface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.border,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.sm + 2,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: darkColors.bgElevated,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 3,
-    paddingHorizontal: spacing.sm + 3,
-  },
-  dateTimeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dateTimeCell: {
-    flex: 1,
-  },
-  rowLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 14,
-  },
-  rowValue: {
-    color: darkColors.textPrimary,
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: darkColors.bgElevated,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm + 3,
-  },
-  categoryRowOpen: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
-  categoryIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryTextWrap: {
-    flex: 1,
-  },
-  categoryLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 11,
-  },
-  categoryName: {
-    color: darkColors.textPrimary,
-    fontSize: 14.5,
-    fontFamily: 'Inter_500Medium',
-  },
-  categoryList: {
-    backgroundColor: darkColors.bgElevated,
-    borderBottomLeftRadius: radius.button,
-    borderBottomRightRadius: radius.button,
-    marginTop: -(spacing.sm + 2),
-    overflow: 'hidden',
-  },
-  categoryListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm + 3,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
-  },
-  categoryListItemLast: {
-    paddingBottom: spacing.sm + 3,
-  },
-  categoryListText: {
-    flex: 1,
-    color: darkColors.textPrimary,
-    fontSize: 14.5,
-  },
-  noteInput: {
-    backgroundColor: darkColors.bgElevated,
-    borderRadius: radius.button,
-    padding: spacing.sm + 3,
-    color: darkColors.textPrimary,
-    fontSize: 14,
-  },
-  saveButton: {
-    backgroundColor: darkColors.accent,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 7,
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  saveButtonText: {
-    color: darkColors.bgPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    overlayBackdrop: {
+      ...StyleSheet.absoluteFill,
+    },
+    keyboardAvoider: {
+      flexShrink: 1,
+      flexGrow: 0,
+    },
+    sheet: {
+      backgroundColor: colors.bgSurface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginTop: 10,
+      marginBottom: 6,
+    },
+    content: {
+      padding: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.lg,
+      gap: spacing.sm + 2,
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.bgElevated,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 3,
+      paddingHorizontal: spacing.sm + 3,
+    },
+    dateTimeRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dateTimeCell: {
+      flex: 1,
+    },
+    rowLabel: {
+      color: colors.textSecondary,
+      fontSize: 14,
+    },
+    rowValue: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontFamily: 'Inter_500Medium',
+    },
+    categoryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.bgElevated,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm + 3,
+    },
+    categoryRowOpen: {
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+    },
+    categoryIconWrap: {
+      width: 26,
+      height: 26,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    categoryTextWrap: {
+      flex: 1,
+    },
+    categoryLabel: {
+      color: colors.textSecondary,
+      fontSize: 11,
+    },
+    categoryName: {
+      color: colors.textPrimary,
+      fontSize: 14.5,
+      fontFamily: 'Inter_500Medium',
+    },
+    categoryList: {
+      backgroundColor: colors.bgElevated,
+      borderBottomLeftRadius: radius.button,
+      borderBottomRightRadius: radius.button,
+      marginTop: -(spacing.sm + 2),
+      overflow: 'hidden',
+    },
+    categoryListItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm + 3,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    categoryListItemLast: {
+      paddingBottom: spacing.sm + 3,
+    },
+    categoryListText: {
+      flex: 1,
+      color: colors.textPrimary,
+      fontSize: 14.5,
+    },
+    noteInput: {
+      backgroundColor: colors.bgElevated,
+      borderRadius: radius.button,
+      padding: spacing.sm + 3,
+      color: colors.textPrimary,
+      fontSize: 14,
+    },
+    saveButton: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 7,
+      alignItems: 'center',
+      marginTop: spacing.xs,
+    },
+    saveButtonText: {
+      color: colors.bgPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  });

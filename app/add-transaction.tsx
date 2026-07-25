@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,8 +16,9 @@ import { DatePickerSheet } from '../src/components/DatePickerSheet';
 import { NumericKeypad } from '../src/components/NumericKeypad';
 import { TimePickerSheet } from '../src/components/TimePickerSheet';
 import { applyKey, rawToPaisas } from '../src/lib/amountInput';
+import { haptics } from '../src/lib/haptics';
 import { usePeopleStore } from '../src/store/usePeopleStore';
-import { darkColors, radius, spacing } from '../src/theme';
+import { radius, spacing, ThemeColors, useTheme } from '../src/theme';
 
 function isToday(date: Date) {
   return date.toDateString() === new Date().toDateString();
@@ -40,6 +41,8 @@ export default function AddTransaction() {
   }>();
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const person = usePeopleStore((s) => s.people.find((p) => p.id === personId));
   const addEntry = usePeopleStore((s) => s.addEntry);
 
@@ -51,7 +54,7 @@ export default function AddTransaction() {
   const submittingRef = useRef(false);
 
   const isGave = direction === 'gave';
-  const tintColor = isGave ? darkColors.moneyOut : darkColors.moneyIn;
+  const tintColor = isGave ? colors.moneyOut : colors.moneyIn;
 
   function handleKeyPress(key: string) {
     setRaw((prev) => applyKey(prev, key));
@@ -60,6 +63,7 @@ export default function AddTransaction() {
   function handleSave() {
     if (!person || submittingRef.current) return;
     submittingRef.current = true;
+    haptics.success();
     addEntry(person.id, {
       amount: rawToPaisas(raw),
       direction: isGave ? 'gave' : 'received',
@@ -89,7 +93,7 @@ export default function AddTransaction() {
               value={note}
               onChangeText={setNote}
               placeholder="What for? (optional)"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               style={styles.noteInput}
             />
 
@@ -132,83 +136,84 @@ export default function AddTransaction() {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlayBackdrop: {
-    ...StyleSheet.absoluteFill,
-  },
-  keyboardAvoider: {
-    flexShrink: 1,
-    flexGrow: 0,
-  },
-  sheet: {
-    backgroundColor: darkColors.bgSurface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.border,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.sm,
-    gap: spacing.sm + 2,
-  },
-  directionLabel: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    textAlign: 'center',
-  },
-  noteInput: {
-    backgroundColor: darkColors.bgElevated,
-    borderRadius: radius.button,
-    padding: spacing.sm + 3,
-    color: darkColors.textPrimary,
-    fontSize: 14,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: darkColors.bgElevated,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 3,
-    paddingHorizontal: spacing.sm + 3,
-  },
-  dateTimeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dateTimeCell: {
-    flex: 1,
-  },
-  rowLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 14,
-  },
-  rowValue: {
-    color: darkColors.textPrimary,
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-  },
-  saveButton: {
-    borderWidth: 1,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 7,
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  saveButtonText: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    overlayBackdrop: {
+      ...StyleSheet.absoluteFill,
+    },
+    keyboardAvoider: {
+      flexShrink: 1,
+      flexGrow: 0,
+    },
+    sheet: {
+      backgroundColor: colors.bgSurface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginTop: 10,
+      marginBottom: 6,
+    },
+    content: {
+      padding: spacing.md,
+      paddingTop: spacing.sm,
+      gap: spacing.sm + 2,
+    },
+    directionLabel: {
+      fontSize: 13,
+      fontFamily: 'Inter_600SemiBold',
+      textAlign: 'center',
+    },
+    noteInput: {
+      backgroundColor: colors.bgElevated,
+      borderRadius: radius.button,
+      padding: spacing.sm + 3,
+      color: colors.textPrimary,
+      fontSize: 14,
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.bgElevated,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 3,
+      paddingHorizontal: spacing.sm + 3,
+    },
+    dateTimeRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dateTimeCell: {
+      flex: 1,
+    },
+    rowLabel: {
+      color: colors.textSecondary,
+      fontSize: 14,
+    },
+    rowValue: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontFamily: 'Inter_500Medium',
+    },
+    saveButton: {
+      borderWidth: 1,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 7,
+      alignItems: 'center',
+      marginTop: spacing.xs,
+    },
+    saveButtonText: {
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  });

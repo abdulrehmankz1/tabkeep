@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Icon } from '../../src/components/icons';
 import { Wordmark } from '../../src/components/Wordmark';
+import { haptics } from '../../src/lib/haptics';
 import { useAppFlowStore } from '../../src/store/useAppFlowStore';
-import { darkColors, radius, spacing } from '../../src/theme';
+import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
 const SLIDES = [
   { icon: 'receipt' as const, title: 'Track every rupee', body: 'Log expenses in seconds and see exactly where your money goes.' },
@@ -16,11 +18,23 @@ const SLIDES = [
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const completeOnboarding = useAppFlowStore((s) => s.completeOnboarding);
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isLast = step === SLIDES.length - 1;
 
   function finish() {
+    haptics.success();
     completeOnboarding();
     router.replace('/sign-up');
+  }
+
+  function handleNext() {
+    haptics.select();
+    if (isLast) {
+      finish();
+    } else {
+      setStep((s) => s + 1);
+    }
   }
 
   const { icon, title, body } = SLIDES[step];
@@ -34,13 +48,13 @@ export default function Onboarding() {
         </Pressable>
       </View>
 
-      <View style={styles.content}>
+      <Animated.View key={step} style={styles.content} entering={FadeIn.duration(220)}>
         <View style={styles.iconCircle}>
-          <Icon name={icon} size={48} color={darkColors.textPrimary} />
+          <Icon name={icon} size={48} color={colors.textPrimary} />
         </View>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
-      </View>
+      </Animated.View>
 
       <View style={styles.footer}>
         <View style={styles.dots}>
@@ -48,10 +62,7 @@ export default function Onboarding() {
             <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
           ))}
         </View>
-        <Pressable
-          style={styles.cta}
-          onPress={() => (isLast ? finish() : setStep((s) => s + 1))}
-        >
+        <Pressable style={styles.cta} onPress={handleNext}>
           <Text style={styles.ctaText}>{isLast ? 'Get Started' : 'Next'}</Text>
         </Pressable>
       </View>
@@ -59,82 +70,83 @@ export default function Onboarding() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: darkColors.bgPrimary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  skip: {
-    color: darkColors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    gap: spacing.md,
-  },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  title: {
-    color: darkColors.textPrimary,
-    fontSize: 23,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    textAlign: 'center',
-  },
-  body: {
-    color: darkColors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  footer: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xs + 2,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.border,
-  },
-  dotActive: {
-    width: 20,
-    backgroundColor: darkColors.textPrimary,
-  },
-  cta: {
-    backgroundColor: darkColors.accent,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 7,
-    alignItems: 'center',
-  },
-  ctaText: {
-    color: darkColors.bgPrimary,
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.bgPrimary,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    skip: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+      fontFamily: 'Inter_600SemiBold',
+    },
+    content: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xl,
+      gap: spacing.md,
+    },
+    iconCircle: {
+      width: 120,
+      height: 120,
+      borderRadius: radius.full,
+      backgroundColor: colors.bgSurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+    },
+    title: {
+      color: colors.textPrimary,
+      fontSize: 23,
+      fontWeight: '700',
+      fontFamily: 'Inter_700Bold',
+      textAlign: 'center',
+    },
+    body: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    footer: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.lg,
+      gap: spacing.lg,
+    },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.xs + 2,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: radius.full,
+      backgroundColor: colors.border,
+    },
+    dotActive: {
+      width: 20,
+      backgroundColor: colors.textPrimary,
+    },
+    cta: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 7,
+      alignItems: 'center',
+    },
+    ctaText: {
+      color: colors.bgPrimary,
+      fontSize: 15,
+      fontWeight: '600',
+      fontFamily: 'Inter_600SemiBold',
+    },
+  });

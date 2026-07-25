@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { haptics } from '../lib/haptics';
 
 interface DialogOptions {
   title: string;
@@ -26,7 +27,12 @@ export const useDialogStore = create<DialogState>((set) => ({
   confirmText: 'Confirm',
   destructive: false,
   onConfirm: () => {},
-  show: (options) =>
+  show: (options) => {
+    if (options.destructive) {
+      haptics.warning();
+    } else {
+      haptics.tap();
+    }
     set({
       visible: true,
       title: options.title,
@@ -34,6 +40,7 @@ export const useDialogStore = create<DialogState>((set) => ({
       confirmText: options.confirmText ?? 'Confirm',
       destructive: options.destructive ?? false,
       onConfirm: options.onConfirm,
-    }),
+    });
+  },
   hide: () => set({ visible: false }),
 }));
