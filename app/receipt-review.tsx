@@ -7,7 +7,7 @@ import { Icon } from '../src/components/icons';
 import { CATEGORY_META } from '../src/lib/categoryMeta';
 import { dateGroupFor, isoDateFor } from '../src/lib/dateGroup';
 import { useExpensesStore } from '../src/store/useExpensesStore';
-import { darkColors, radius, spacing } from '../src/theme';
+import { radius, spacing, ThemeColors, useTheme } from '../src/theme';
 
 const ALL_CATEGORIES = ['Food', 'Rent', 'Bills', 'Transport', 'Other'];
 
@@ -28,6 +28,8 @@ export default function ReceiptReview() {
     category: string;
     imageUri: string;
   }>();
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const parsedCategory = ALL_CATEGORIES.includes(params.category) ? params.category : 'Other';
   const suggestedCategories = useMemo(() => {
@@ -75,7 +77,7 @@ export default function ReceiptReview() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Icon name="chevronleft" size={22} color={darkColors.textPrimary} />
+          <Icon name="chevronleft" size={22} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.title}>Check the details</Text>
         <View style={{ width: 22 }} />
@@ -91,7 +93,7 @@ export default function ReceiptReview() {
               onChangeText={setAmountRaw}
               keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               style={styles.amountInput}
             />
           </View>
@@ -103,7 +105,7 @@ export default function ReceiptReview() {
             value={merchant}
             onChangeText={setMerchant}
             placeholder="Merchant name"
-            placeholderTextColor={darkColors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             style={styles.fieldInput}
           />
         </View>
@@ -148,7 +150,7 @@ export default function ReceiptReview() {
         {!!params.imageUri && (
           <Pressable style={styles.photoRow} onPress={() => setShowPhoto(true)}>
             <View style={styles.photoIconWrap}>
-              <Icon name="receipt" size={18} color={darkColors.textPrimary} />
+              <Icon name="receipt" size={18} color={colors.textPrimary} />
             </View>
             <Text style={styles.photoText}>Tap to view receipt photo</Text>
           </Pressable>
@@ -173,167 +175,168 @@ export default function ReceiptReview() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: darkColors.bgPrimary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  title: {
-    color: darkColors.textPrimary,
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  amountCard: {
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginBottom: spacing.sm + 2,
-  },
-  label: {
-    color: darkColors.textSecondary,
-    fontSize: 11.5,
-    marginBottom: spacing.xs,
-  },
-  labelWarn: {
-    color: darkColors.warning,
-  },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  amountPrefix: {
-    color: darkColors.textPrimary,
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-  },
-  amountInput: {
-    color: darkColors.textPrimary,
-    fontSize: 30,
-    fontFamily: 'Inter_700Bold',
-    minWidth: 60,
-    padding: 0,
-    fontVariant: ['tabular-nums'],
-  },
-  fieldCard: {
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.sm + 5,
-    marginBottom: spacing.sm + 2,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  fieldCardWarn: {
-    borderColor: darkColors.warning,
-  },
-  fieldInput: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-    padding: 0,
-  },
-  fieldValue: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-  },
-  sectionLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 12.5,
-    marginBottom: spacing.sm,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: darkColors.border,
-    paddingVertical: 6,
-    paddingHorizontal: spacing.sm + 3,
-  },
-  chipActive: {
-    borderColor: darkColors.textPrimary,
-  },
-  chipIconWrap: {
-    width: 20,
-    height: 20,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipText: {
-    color: darkColors.textPrimary,
-    fontSize: 13.5,
-  },
-  photoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.sm + 2,
-    marginBottom: spacing.lg,
-  },
-  photoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.button,
-    backgroundColor: darkColors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoText: {
-    color: darkColors.textSecondary,
-    fontSize: 13,
-  },
-  confirmButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 7,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: darkColors.bgPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  photoOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoClose: {
-    position: 'absolute',
-    top: 50,
-    right: spacing.md,
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  photoFull: {
-    width: '100%',
-    height: '80%',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.bgPrimary,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+    },
+    title: {
+      color: colors.textPrimary,
+      fontSize: 16,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    amountCard: {
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      alignItems: 'center',
+      marginBottom: spacing.sm + 2,
+    },
+    label: {
+      color: colors.textSecondary,
+      fontSize: 11.5,
+      marginBottom: spacing.xs,
+    },
+    labelWarn: {
+      color: colors.warning,
+    },
+    amountRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+    },
+    amountPrefix: {
+      color: colors.textPrimary,
+      fontSize: 22,
+      fontFamily: 'Inter_700Bold',
+    },
+    amountInput: {
+      color: colors.textPrimary,
+      fontSize: 30,
+      fontFamily: 'Inter_700Bold',
+      minWidth: 60,
+      padding: 0,
+      fontVariant: ['tabular-nums'],
+    },
+    fieldCard: {
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.sm + 5,
+      marginBottom: spacing.sm + 2,
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    fieldCardWarn: {
+      borderColor: colors.warning,
+    },
+    fieldInput: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      padding: 0,
+    },
+    fieldValue: {
+      color: colors.textPrimary,
+      fontSize: 15,
+    },
+    sectionLabel: {
+      color: colors.textSecondary,
+      fontSize: 12.5,
+      marginBottom: spacing.sm,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 6,
+      paddingHorizontal: spacing.sm + 3,
+    },
+    chipActive: {
+      borderColor: colors.textPrimary,
+    },
+    chipIconWrap: {
+      width: 20,
+      height: 20,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chipText: {
+      color: colors.textPrimary,
+      fontSize: 13.5,
+    },
+    photoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm + 2,
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.sm + 2,
+      marginBottom: spacing.lg,
+    },
+    photoIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.button,
+      backgroundColor: colors.bgElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+    },
+    confirmButton: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 7,
+      alignItems: 'center',
+    },
+    confirmButtonText: {
+      color: colors.bgPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    photoOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.92)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoClose: {
+      position: 'absolute',
+      top: 50,
+      right: spacing.md,
+      width: 36,
+      height: 36,
+      borderRadius: radius.full,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1,
+    },
+    photoFull: {
+      width: '100%',
+      height: '80%',
+    },
+  });

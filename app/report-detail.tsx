@@ -11,10 +11,14 @@ import { isInMonth, monthName, monthYearLabel } from '../src/lib/monthFilter';
 import { spendTrend } from '../src/lib/trend';
 import { useExpensesStore } from '../src/store/useExpensesStore';
 import { usePeopleStore } from '../src/store/usePeopleStore';
-import { darkColors, radius, spacing } from '../src/theme';
+import { useSettingsStore } from '../src/store/useSettingsStore';
+import { radius, spacing, ThemeColors, useTheme } from '../src/theme';
 
 export default function ReportDetail() {
   const { month } = useLocalSearchParams<{ month?: string }>();
+  useSettingsStore((s) => s.currencyCode);
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const monthOffset = Math.max(0, Number(month) || 0);
   const [offset, setOffset] = useState(monthOffset);
   const cardRef = useRef<View>(null);
@@ -86,15 +90,15 @@ export default function ReportDetail() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Icon name="chevronleft" size={22} color={darkColors.textPrimary} />
+          <Icon name="chevronleft" size={22} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.monthNav}>
           <Pressable onPress={() => setOffset((o) => o + 1)} hitSlop={8}>
-            <Icon name="chevronleft" size={16} color={darkColors.textSecondary} />
+            <Icon name="chevronleft" size={16} color={colors.textSecondary} />
           </Pressable>
           <Text style={styles.title}>{monthName(offset)} report</Text>
           <Pressable onPress={() => setOffset((o) => Math.max(0, o - 1))} hitSlop={8} disabled={offset === 0}>
-            <Icon name="chevronright" size={16} color={offset === 0 ? darkColors.border : darkColors.textSecondary} />
+            <Icon name="chevronright" size={16} color={offset === 0 ? colors.border : colors.textSecondary} />
           </Pressable>
         </View>
         <View style={{ width: 22 }} />
@@ -106,8 +110,8 @@ export default function ReportDetail() {
             <Text style={styles.monthLabel}>{monthYearLabel(offset)}</Text>
             <Text style={styles.total}>{formatAmount(monthTotal)}</Text>
             {trend && (
-              <View style={[styles.trendPill, { borderColor: trend.good ? darkColors.moneyIn : darkColors.moneyOut }]}>
-                <Text style={[styles.trendPillText, { color: trend.good ? darkColors.moneyIn : darkColors.moneyOut }]}>
+              <View style={[styles.trendPill, { borderColor: trend.good ? colors.moneyIn : colors.moneyOut }]}>
+                <Text style={[styles.trendPillText, { color: trend.good ? colors.moneyIn : colors.moneyOut }]}>
                   {trend.text}
                 </Text>
               </View>
@@ -153,7 +157,7 @@ export default function ReportDetail() {
         </View>
 
         <Pressable style={styles.shareButton} onPress={handleShare} disabled={sharing}>
-          <Icon name="share" size={17} color={darkColors.bgPrimary} />
+          <Icon name="share" size={17} color={colors.bgPrimary} />
           <Text style={styles.shareText}>{sharing ? 'Preparing…' : 'Share as image'}</Text>
         </Pressable>
       </ScrollView>
@@ -161,128 +165,129 @@ export default function ReportDetail() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: darkColors.bgPrimary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  title: {
-    color: darkColors.textPrimary,
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  card: {
-    backgroundColor: darkColors.bgSurface,
-    borderRadius: radius.card,
-    padding: spacing.md,
-  },
-  totalBlock: {
-    marginBottom: spacing.md,
-    gap: spacing.xs,
-  },
-  monthLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 13,
-  },
-  total: {
-    color: darkColors.textPrimary,
-    fontSize: 30,
-    fontFamily: 'Inter_700Bold',
-    fontVariant: ['tabular-nums'],
-  },
-  trendPill: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  trendPillText: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-  },
-  sectionLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 12.5,
-    marginBottom: spacing.sm,
-  },
-  categoryRow: {
-    marginBottom: spacing.sm + 4,
-    gap: spacing.xs,
-  },
-  categoryHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  categoryName: {
-    color: darkColors.textPrimary,
-    fontSize: 14.5,
-  },
-  categoryAmount: {
-    color: darkColors.textPrimary,
-    fontSize: 14.5,
-    fontFamily: 'Inter_600SemiBold',
-    fontVariant: ['tabular-nums'],
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.bgElevated,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: radius.full,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: darkColors.border,
-    marginVertical: spacing.sm,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs + 2,
-  },
-  metaLabel: {
-    color: darkColors.textSecondary,
-    fontSize: 13.5,
-  },
-  metaValue: {
-    color: darkColors.textPrimary,
-    fontSize: 13.5,
-    fontFamily: 'Inter_600SemiBold',
-    fontVariant: ['tabular-nums'],
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 6,
-    marginTop: spacing.lg,
-  },
-  shareText: {
-    color: darkColors.bgPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.bgPrimary,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+    },
+    title: {
+      color: colors.textPrimary,
+      fontSize: 16,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    monthNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    card: {
+      backgroundColor: colors.bgSurface,
+      borderRadius: radius.card,
+      padding: spacing.md,
+    },
+    totalBlock: {
+      marginBottom: spacing.md,
+      gap: spacing.xs,
+    },
+    monthLabel: {
+      color: colors.textSecondary,
+      fontSize: 13,
+    },
+    total: {
+      color: colors.textPrimary,
+      fontSize: 30,
+      fontFamily: 'Inter_700Bold',
+      fontVariant: ['tabular-nums'],
+    },
+    trendPill: {
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+    },
+    trendPillText: {
+      fontSize: 11,
+      fontFamily: 'Inter_500Medium',
+    },
+    sectionLabel: {
+      color: colors.textSecondary,
+      fontSize: 12.5,
+      marginBottom: spacing.sm,
+    },
+    categoryRow: {
+      marginBottom: spacing.sm + 4,
+      gap: spacing.xs,
+    },
+    categoryHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    categoryName: {
+      color: colors.textPrimary,
+      fontSize: 14.5,
+    },
+    categoryAmount: {
+      color: colors.textPrimary,
+      fontSize: 14.5,
+      fontFamily: 'Inter_600SemiBold',
+      fontVariant: ['tabular-nums'],
+    },
+    progressTrack: {
+      height: 6,
+      borderRadius: radius.full,
+      backgroundColor: colors.bgElevated,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: radius.full,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: spacing.sm,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs + 2,
+    },
+    metaLabel: {
+      color: colors.textSecondary,
+      fontSize: 13.5,
+    },
+    metaValue: {
+      color: colors.textPrimary,
+      fontSize: 13.5,
+      fontFamily: 'Inter_600SemiBold',
+      fontVariant: ['tabular-nums'],
+    },
+    shareButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.accent,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 6,
+      marginTop: spacing.lg,
+    },
+    shareText: {
+      color: colors.bgPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  });
