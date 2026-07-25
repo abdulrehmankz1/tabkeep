@@ -3,14 +3,34 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
-import { Icon } from '../../src/components/icons';
+import { Icon, IconName } from '../../src/components/icons';
 import { haptics } from '../../src/lib/haptics';
 import { safePush } from '../../src/lib/navGuard';
 import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
-const OPTIONS = [
-  { route: '/add-expense' as const, label: 'Add expense', icon: 'plus' as const },
-  { route: '/scan-receipt' as const, label: 'Scan receipt', icon: 'camera' as const },
+const OPTIONS: {
+  route: '/add-expense' | '/scan-receipt';
+  icon: IconName;
+  label: string;
+  description: string;
+  badge?: string;
+  tintKey: 'moneyIn' | 'info';
+}[] = [
+  {
+    route: '/add-expense',
+    icon: 'plus',
+    label: 'Manual entry',
+    description: 'Type expense details yourself',
+    tintKey: 'moneyIn',
+  },
+  {
+    route: '/scan-receipt',
+    icon: 'camera',
+    label: 'Scan receipt',
+    description: 'Auto-fill using camera or gallery',
+    badge: 'OCR',
+    tintKey: 'info',
+  },
 ];
 
 export default function TabsLayout() {
@@ -104,21 +124,36 @@ export default function TabsLayout() {
             <Pressable style={styles.backdrop} onPress={() => setExpanded(false)} />
           </Animated.View>
 
-          <View style={[styles.speedDial, { bottom: fabBottom + 78 }]} pointerEvents="box-none">
+          <Animated.View
+            style={[styles.sheet, { bottom: 56 + insets.bottom }]}
+            entering={FadeInUp.duration(200).easing(Easing.out(Easing.quad))}
+          >
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Add expense</Text>
+
             {OPTIONS.map((opt, index) => (
-              <Animated.View
+              <Pressable
                 key={opt.route}
-                entering={FadeInUp.duration(160).delay(index * 30).easing(Easing.out(Easing.quad))}
+                style={[styles.optionCard, index === OPTIONS.length - 1 && styles.optionCardLast]}
+                onPress={() => handleOption(opt.route)}
               >
-                <Pressable style={styles.pill} onPress={() => handleOption(opt.route)}>
-                  <View style={styles.pillIconWrap}>
-                    <Icon name={opt.icon} size={15} color={colors.textPrimary} />
+                <View style={[styles.optionIconWrap, { backgroundColor: colors[opt.tintKey] }]}>
+                  <Icon name={opt.icon} size={20} color="#FFFFFF" />
+                </View>
+                <View style={styles.optionTextWrap}>
+                  <View style={styles.optionTitleRow}>
+                    <Text style={styles.optionTitle}>{opt.label}</Text>
+                    {opt.badge && (
+                      <View style={[styles.badge, { backgroundColor: colors[opt.tintKey] }]}>
+                        <Text style={styles.badgeText}>{opt.badge}</Text>
+                      </View>
+                    )}
                   </View>
-                  <Text style={styles.pillText}>{opt.label}</Text>
-                </Pressable>
-              </Animated.View>
+                  <Text style={styles.optionDescription}>{opt.description}</Text>
+                </View>
+              </Pressable>
             ))}
-          </View>
+          </Animated.View>
 
           <Animated.View
             style={[styles.overlayFabWrap, { bottom: fabBottom }]}
@@ -186,40 +221,85 @@ const createStyles = (colors: ThemeColors) =>
       borderWidth: 4,
       borderColor: colors.bgPrimary,
     },
-    speedDial: {
+    sheet: {
       position: 'absolute',
       left: 0,
       right: 0,
-      alignItems: 'center',
-      gap: spacing.sm + 2,
+      backgroundColor: colors.bgSurface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.lg,
+      elevation: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
     },
-    pill: {
+    sheetHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginBottom: spacing.sm + 2,
+    },
+    sheetTitle: {
+      color: colors.textSecondary,
+      fontSize: 12,
+      fontFamily: 'Inter_600SemiBold',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: spacing.md,
+    },
+    optionCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm + 2,
       backgroundColor: colors.bgElevated,
-      borderRadius: radius.full,
-      paddingVertical: spacing.xs + 2,
-      paddingHorizontal: spacing.sm + 4,
-      paddingRight: spacing.md + 2,
-      width: 190,
-      elevation: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.4,
-      shadowRadius: 10,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
     },
-    pillIconWrap: {
-      width: 30,
-      height: 30,
-      borderRadius: radius.full,
-      backgroundColor: colors.bgPrimary,
+    optionCardLast: {
+      marginBottom: 0,
+    },
+    optionIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.button,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    pillText: {
+    optionTextWrap: {
+      flex: 1,
+      gap: 2,
+    },
+    optionTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    optionTitle: {
       color: colors.textPrimary,
-      fontSize: 14,
-      fontFamily: 'Inter_500Medium',
+      fontSize: 15.5,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    badge: {
+      paddingHorizontal: spacing.xs + 2,
+      paddingVertical: 2,
+      borderRadius: radius.full,
+    },
+    badgeText: {
+      color: '#FFFFFF',
+      fontSize: 10.5,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    optionDescription: {
+      color: colors.textSecondary,
+      fontSize: 12.5,
+      lineHeight: 17,
     },
   });
