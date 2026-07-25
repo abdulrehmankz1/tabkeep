@@ -5,19 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DatePickerSheet } from '../src/components/DatePickerSheet';
 import { Icon } from '../src/components/icons';
 import { CATEGORY_META } from '../src/lib/categoryMeta';
-import { dateGroupFor, isoDateFor } from '../src/lib/dateGroup';
+import { formatDisplayDate } from '../src/lib/dateGroup';
 import { useExpensesStore } from '../src/store/useExpensesStore';
 import { radius, spacing, ThemeColors, useTheme } from '../src/theme';
 
 const ALL_CATEGORIES = ['Food', 'Rent', 'Bills', 'Transport', 'Other'];
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
-
-function formatDateLabel(date: Date) {
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 export default function ReceiptReview() {
   const params = useLocalSearchParams<{
@@ -53,20 +45,15 @@ export default function ReceiptReview() {
     setDateConfident(true);
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     const paisas = Math.round(parseFloat(amountRaw) * 100);
     if (submittingRef.current || !paisas || Number.isNaN(paisas)) return;
     submittingRef.current = true;
-    const meta = CATEGORY_META[category] ?? CATEGORY_META.Other;
-    addExpense({
+    await addExpense({
       note: merchant.trim() || category,
-      time: formatTime(date),
-      dateGroup: dateGroupFor(date),
-      date: isoDateFor(date),
       amount: -Math.abs(paisas),
-      color: meta.color,
-      icon: meta.icon,
       category,
+      occurredAt: date,
       source: 'ocr',
       receiptImage: params.imageUri,
     });
@@ -117,7 +104,7 @@ export default function ReceiptReview() {
           <Text style={[styles.label, !dateConfident && styles.labelWarn]}>
             Date{!dateConfident ? ' · please verify' : ''}
           </Text>
-          <Text style={styles.fieldValue}>{formatDateLabel(date)}</Text>
+          <Text style={styles.fieldValue}>{formatDisplayDate(date)}</Text>
         </Pressable>
 
         <DatePickerSheet

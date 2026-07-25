@@ -16,22 +16,10 @@ import { DatePickerSheet } from '../src/components/DatePickerSheet';
 import { NumericKeypad } from '../src/components/NumericKeypad';
 import { TimePickerSheet } from '../src/components/TimePickerSheet';
 import { applyKey, rawToPaisas } from '../src/lib/amountInput';
+import { formatDisplayDate, formatDisplayTime } from '../src/lib/dateGroup';
 import { haptics } from '../src/lib/haptics';
 import { usePeopleStore } from '../src/store/usePeopleStore';
 import { radius, spacing, ThemeColors, useTheme } from '../src/theme';
-
-function isToday(date: Date) {
-  return date.toDateString() === new Date().toDateString();
-}
-
-function formatDate(date: Date) {
-  if (isToday(date)) return 'Today';
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
 
 export default function AddTransaction() {
   const { personId, direction, amount: prefillAmount } = useLocalSearchParams<{
@@ -60,79 +48,76 @@ export default function AddTransaction() {
     setRaw((prev) => applyKey(prev, key));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!person || submittingRef.current) return;
     submittingRef.current = true;
     haptics.success();
-    addEntry(person.id, {
+    await addEntry(person.id, {
       amount: rawToPaisas(raw),
       direction: isGave ? 'gave' : 'received',
       note: note || undefined,
-      date: formatDate(date),
-      time: formatTime(date),
+      occurredAt: date,
     });
     router.back();
   }
 
   return (
-    <View style={styles.overlay}>
+    <KeyboardAvoidingView
+      style={styles.overlay}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Pressable style={styles.overlayBackdrop} onPress={() => router.back()} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoider}
-      >
-        <View style={[styles.sheet, { maxHeight: windowHeight * 0.9 }]}>
-          <View style={styles.handle} />
-          <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
-            <Text style={[styles.directionLabel, { color: tintColor }]}>
-              {isGave ? 'You gave' : 'You got'} &middot; {person?.name ?? ''}
-            </Text>
-            <AmountDisplay paisas={rawToPaisas(raw)} />
+      <View style={[styles.sheet, { maxHeight: windowHeight * 0.9 }]}>
+        <View style={styles.handle} />
+        <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
+          <Text style={[styles.directionLabel, { color: tintColor }]}>
+            {isGave ? 'You gave' : 'You got'} &middot; {person?.name ?? ''}
+          </Text>
+          <AmountDisplay paisas={rawToPaisas(raw)} />
 
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              placeholder="What for? (optional)"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.noteInput}
-            />
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="What for? (optional)"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.noteInput}
+          />
 
-            <View style={styles.dateTimeRow}>
-              <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.rowLabel}>Date</Text>
-                <Text style={styles.rowValue}>{formatDate(date)}</Text>
-              </Pressable>
-              <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
-                <Text style={styles.rowLabel}>Time</Text>
-                <Text style={styles.rowValue}>{formatTime(date)}</Text>
-              </Pressable>
-            </View>
-
-            <DatePickerSheet
-              visible={showDatePicker}
-              date={date}
-              onSelect={setDate}
-              onClose={() => setShowDatePicker(false)}
-            />
-            <TimePickerSheet
-              visible={showTimePicker}
-              date={date}
-              onSelect={setDate}
-              onClose={() => setShowTimePicker(false)}
-            />
-
-            <NumericKeypad onKeyPress={handleKeyPress} />
-
-            <Pressable
-              style={[styles.saveButton, { borderColor: tintColor }]}
-              onPress={handleSave}
-            >
-              <Text style={[styles.saveButtonText, { color: tintColor }]}>Save</Text>
+          <View style={styles.dateTimeRow}>
+            <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.rowLabel}>Date</Text>
+              <Text style={styles.rowValue}>{formatDisplayDate(date)}</Text>
+            </Pressable>
+            <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
+              <Text style={styles.rowLabel}>Time</Text>
+              <Text style={styles.rowValue}>{formatDisplayTime(date)}</Text>
             </Pressable>
           </View>
+
+          <DatePickerSheet
+            visible={showDatePicker}
+            date={date}
+            onSelect={setDate}
+            onClose={() => setShowDatePicker(false)}
+          />
+          <TimePickerSheet
+            visible={showTimePicker}
+            date={date}
+            onSelect={setDate}
+            onClose={() => setShowTimePicker(false)}
+          />
+
+          <NumericKeypad onKeyPress={handleKeyPress} />
+
+          <Pressable
+            style={[styles.saveButton, { borderColor: tintColor }]}
+            onPress={handleSave}
+          >
+            <Text style={[styles.saveButtonText, { color: tintColor }]}>Save</Text>
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -144,10 +129,6 @@ const createStyles = (colors: ThemeColors) =>
     },
     overlayBackdrop: {
       ...StyleSheet.absoluteFill,
-    },
-    keyboardAvoider: {
-      flexShrink: 1,
-      flexGrow: 0,
     },
     sheet: {
       backgroundColor: colors.bgSurface,
