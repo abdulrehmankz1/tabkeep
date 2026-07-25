@@ -16,22 +16,10 @@ import { DatePickerSheet } from '../src/components/DatePickerSheet';
 import { NumericKeypad } from '../src/components/NumericKeypad';
 import { TimePickerSheet } from '../src/components/TimePickerSheet';
 import { applyKey, rawToPaisas } from '../src/lib/amountInput';
+import { formatDisplayDate, formatDisplayTime } from '../src/lib/dateGroup';
 import { haptics } from '../src/lib/haptics';
 import { usePeopleStore } from '../src/store/usePeopleStore';
 import { radius, spacing, ThemeColors, useTheme } from '../src/theme';
-
-function isToday(date: Date) {
-  return date.toDateString() === new Date().toDateString();
-}
-
-function formatDate(date: Date) {
-  if (isToday(date)) return 'Today';
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
 
 export default function AddTransaction() {
   const { personId, direction, amount: prefillAmount } = useLocalSearchParams<{
@@ -60,16 +48,15 @@ export default function AddTransaction() {
     setRaw((prev) => applyKey(prev, key));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!person || submittingRef.current) return;
     submittingRef.current = true;
     haptics.success();
-    addEntry(person.id, {
+    await addEntry(person.id, {
       amount: rawToPaisas(raw),
       direction: isGave ? 'gave' : 'received',
       note: note || undefined,
-      date: formatDate(date),
-      time: formatTime(date),
+      occurredAt: date,
     });
     router.back();
   }
@@ -99,11 +86,11 @@ export default function AddTransaction() {
           <View style={styles.dateTimeRow}>
             <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
               <Text style={styles.rowLabel}>Date</Text>
-              <Text style={styles.rowValue}>{formatDate(date)}</Text>
+              <Text style={styles.rowValue}>{formatDisplayDate(date)}</Text>
             </Pressable>
             <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
               <Text style={styles.rowLabel}>Time</Text>
-              <Text style={styles.rowValue}>{formatTime(date)}</Text>
+              <Text style={styles.rowValue}>{formatDisplayTime(date)}</Text>
             </Pressable>
           </View>
 

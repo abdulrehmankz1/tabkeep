@@ -1,52 +1,72 @@
 import { create } from 'zustand';
-import { MOCK_PEOPLE, MockPerson, PersonEntry } from '../data/mockPeople';
-import { BIN_RETENTION_DAYS, isExpiredInBin } from '../lib/bin';
+import { MockPerson } from '../data/mockPeople';
+import {
+  createEntry,
+  createPerson,
+  fetchAllPeople,
+  movePersonToBin,
+  NewEntryInput,
+  permanentlyDeletePerson,
+  purgeExpiredPeople,
+  restorePerson as restorePersonInDb,
+} from '../db/repositories/people';
+import { BIN_RETENTION_DAYS } from '../lib/bin';
 import { useDialogStore } from './useDialogStore';
 
 interface PeopleState {
   people: MockPerson[];
-  addPerson: (name: string, phone?: string) => string;
-  addEntry: (personId: string, entry: Omit<PersonEntry, 'id'>) => void;
-  moveToBin: (id: string) => void;
-  restorePerson: (id: string) => void;
-  permanentlyDelete: (id: string) => void;
-  purgeExpiredBinItems: () => void;
+  hydrated: boolean;
+  hydrate: () => Promise<void>;
+  addPerson: (name: string, phone?: string) => Promise<string>;
+  addEntry: (personId: string, entry: NewEntryInput) => Promise<void>;
+  moveToBin: (id: string) => Promise<void>;
+  restorePerson: (id: string) => Promise<void>;
+  permanentlyDelete: (id: string) => Promise<void>;
+  purgeExpiredBinItems: () => Promise<void>;
 }
 
-let nextId = MOCK_PEOPLE.length + 1;
-let nextEntryId = 100;
-
 export const usePeopleStore = create<PeopleState>((set) => ({
-  people: MOCK_PEOPLE,
-  addPerson: (name, phone) => {
-    const id = String(nextId++);
-    set((state) => ({
-      people: [...state.people, { id, name, phone, entries: [] }],
-    }));
-    return id;
+  people: [],
+  hydrated: false,
+  hydrate: async () => {
+    await purgeExpiredPeople();
+    const people = await fetchAllPeople();
+    set({ people, hydrated: true });
   },
-  addEntry: (personId, entry) => {
-    const id = `e${nextEntryId++}`;
+  addPerson: async (name, phone) => {
+    const person = await createPerson(name, phone);
+    set((state) => ({ people: [...state.people, person] }));
+    return person.id;
+  },
+  addEntry: async (personId, entry) => {
+    const created = await createEntry(personId, entry);
     set((state) => ({
       people: state.people.map((p) =>
-        p.id === personId ? { ...p, entries: [{ ...entry, id }, ...p.entries] } : p,
+        p.id === personId ? { ...p, entries: [created, ...p.entries] } : p,
       ),
     }));
   },
-  moveToBin: (id) =>
+  moveToBin: async (id) => {
+    await movePersonToBin(id);
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, deletedAt: Date.now() } : p)),
-    })),
-  restorePerson: (id) =>
+    }));
+  },
+  restorePerson: async (id) => {
+    await restorePersonInDb(id);
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, deletedAt: undefined } : p)),
-    })),
-  permanentlyDelete: (id) =>
-    set((state) => ({ people: state.people.filter((p) => p.id !== id) })),
-  purgeExpiredBinItems: () =>
-    set((state) => ({
-      people: state.people.filter((p) => !p.deletedAt || !isExpiredInBin(p.deletedAt)),
-    })),
+    }));
+  },
+  permanentlyDelete: async (id) => {
+    await permanentlyDeletePerson(id);
+    set((state) => ({ people: state.people.filter((p) => p.id !== id) }));
+  },
+  purgeExpiredBinItems: async () => {
+    await purgeExpiredPeople();
+    const people = await fetchAllPeople();
+    set({ people });
+  },
 }));
 
 export function confirmMoveToBinPerson(id: string, name: string, onDeleted?: () => void) {

@@ -17,8 +17,7 @@ import { Icon } from '../src/components/icons';
 import { NumericKeypad } from '../src/components/NumericKeypad';
 import { TimePickerSheet } from '../src/components/TimePickerSheet';
 import { applyKey, rawToPaisas } from '../src/lib/amountInput';
-import { CATEGORY_META } from '../src/lib/categoryMeta';
-import { dateGroupFor, isoDateFor } from '../src/lib/dateGroup';
+import { formatDisplayDate, formatDisplayTime } from '../src/lib/dateGroup';
 import { haptics } from '../src/lib/haptics';
 import { useExpensesStore } from '../src/store/useExpensesStore';
 import { chipColors, radius, spacing, ThemeColors, useTheme } from '../src/theme';
@@ -30,19 +29,6 @@ const CATEGORIES = [
   { name: 'Transport', icon: 'truck' as const },
   { name: 'Other', icon: 'zap' as const },
 ];
-
-function isToday(date: Date) {
-  return date.toDateString() === new Date().toDateString();
-}
-
-function formatDate(date: Date) {
-  if (isToday(date)) return 'Today';
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
 
 export default function AddExpense() {
   const { height: windowHeight } = useWindowDimensions();
@@ -64,20 +50,16 @@ export default function AddExpense() {
     setRaw((prev) => applyKey(prev, key));
   }
 
-  function handleSave() {
+  async function handleSave() {
     const amount = rawToPaisas(raw);
     if (submittingRef.current || amount === 0) return;
     submittingRef.current = true;
     haptics.success();
-    addExpense({
+    await addExpense({
       note: note.trim() || category.name,
-      time: formatTime(date),
-      dateGroup: dateGroupFor(date),
-      date: isoDateFor(date),
       amount: -amount,
-      color: CATEGORY_META[category.name]?.color ?? '#6B7280',
-      icon: category.icon,
       category: category.name,
+      occurredAt: date,
       source: 'manual',
     });
     router.back();
@@ -134,11 +116,11 @@ export default function AddExpense() {
           <View style={styles.dateTimeRow}>
             <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
               <Text style={styles.rowLabel}>Date</Text>
-              <Text style={styles.rowValue}>{formatDate(date)}</Text>
+              <Text style={styles.rowValue}>{formatDisplayDate(date)}</Text>
             </Pressable>
             <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
               <Text style={styles.rowLabel}>Time</Text>
-              <Text style={styles.rowValue}>{formatTime(date)}</Text>
+              <Text style={styles.rowValue}>{formatDisplayTime(date)}</Text>
             </Pressable>
           </View>
 

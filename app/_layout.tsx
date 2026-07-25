@@ -8,11 +8,15 @@ import {
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
+import { seedIfEmpty } from '../src/db/seed';
 import { applyGlobalFont } from '../src/lib/applyGlobalFont';
 import { useAppFlowStore } from '../src/store/useAppFlowStore';
+import { useExpensesStore } from '../src/store/useExpensesStore';
+import { usePeopleStore } from '../src/store/usePeopleStore';
+import { useSettingsStore } from '../src/store/useSettingsStore';
 import { useResolvedTheme, useTheme } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +25,10 @@ export default function RootLayout() {
   const isSignedIn = useAppFlowStore((s) => s.isSignedIn);
   const colors = useTheme();
   const resolvedTheme = useResolvedTheme();
+  const hydrateExpenses = useExpensesStore((s) => s.hydrate);
+  const hydratePeople = usePeopleStore((s) => s.hydrate);
+  const [dbReady, setDbReady] = useState(false);
+  const [settingsReady, setSettingsReady] = useState(useSettingsStore.persist.hasHydrated());
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -29,13 +37,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    seedIfEmpty()
+      .then(() => Promise.all([hydrateExpenses(), hydratePeople()]))
+      .finally(() => setDbReady(true));
+  }, [hydrateExpenses, hydratePeople]);
+
+  useEffect(() => {
+    return useSettingsStore.persist.onFinishHydration(() => setSettingsReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && dbReady && settingsReady) {
       applyGlobalFont();
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, dbReady, settingsReady]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !dbReady || !settingsReady) {
     return null;
   }
 

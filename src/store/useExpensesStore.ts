@@ -1,40 +1,62 @@
 import { create } from 'zustand';
-import { MOCK_EXPENSES, MockExpense } from '../data/mockExpenses';
-import { BIN_RETENTION_DAYS, isExpiredInBin } from '../lib/bin';
+import { MockExpense } from '../data/mockExpenses';
+import {
+  createExpense,
+  fetchAllExpenses,
+  moveExpenseToBin,
+  NewExpenseInput,
+  permanentlyDeleteExpense,
+  purgeExpiredExpenses,
+  restoreExpense as restoreExpenseInDb,
+} from '../db/repositories/expenses';
+import { BIN_RETENTION_DAYS } from '../lib/bin';
 import { useDialogStore } from './useDialogStore';
 
 interface ExpensesState {
   expenses: MockExpense[];
-  addExpense: (input: Omit<MockExpense, 'id'>) => string;
-  moveToBin: (id: string) => void;
-  restoreExpense: (id: string) => void;
-  permanentlyDelete: (id: string) => void;
-  purgeExpiredBinItems: () => void;
+  hydrated: boolean;
+  hydrate: () => Promise<void>;
+  addExpense: (input: NewExpenseInput) => Promise<string>;
+  moveToBin: (id: string) => Promise<void>;
+  restoreExpense: (id: string) => Promise<void>;
+  permanentlyDelete: (id: string) => Promise<void>;
+  purgeExpiredBinItems: () => Promise<void>;
 }
 
-let nextId = MOCK_EXPENSES.length + 1;
-
 export const useExpensesStore = create<ExpensesState>((set) => ({
-  expenses: MOCK_EXPENSES,
-  addExpense: (input) => {
-    const id = String(nextId++);
-    set((state) => ({ expenses: [{ ...input, id }, ...state.expenses] }));
-    return id;
+  expenses: [],
+  hydrated: false,
+  hydrate: async () => {
+    await purgeExpiredExpenses();
+    const expenses = await fetchAllExpenses();
+    set({ expenses, hydrated: true });
   },
-  moveToBin: (id) =>
+  addExpense: async (input) => {
+    const expense = await createExpense(input);
+    set((state) => ({ expenses: [expense, ...state.expenses] }));
+    return expense.id;
+  },
+  moveToBin: async (id) => {
+    await moveExpenseToBin(id);
     set((state) => ({
       expenses: state.expenses.map((e) => (e.id === id ? { ...e, deletedAt: Date.now() } : e)),
-    })),
-  restoreExpense: (id) =>
+    }));
+  },
+  restoreExpense: async (id) => {
+    await restoreExpenseInDb(id);
     set((state) => ({
       expenses: state.expenses.map((e) => (e.id === id ? { ...e, deletedAt: undefined } : e)),
-    })),
-  permanentlyDelete: (id) =>
-    set((state) => ({ expenses: state.expenses.filter((e) => e.id !== id) })),
-  purgeExpiredBinItems: () =>
-    set((state) => ({
-      expenses: state.expenses.filter((e) => !e.deletedAt || !isExpiredInBin(e.deletedAt)),
-    })),
+    }));
+  },
+  permanentlyDelete: async (id) => {
+    await permanentlyDeleteExpense(id);
+    set((state) => ({ expenses: state.expenses.filter((e) => e.id !== id) }));
+  },
+  purgeExpiredBinItems: async () => {
+    await purgeExpiredExpenses();
+    const expenses = await fetchAllExpenses();
+    set({ expenses });
+  },
 }));
 
 export function confirmMoveToBin(id: string, note: string, onDeleted?: () => void) {

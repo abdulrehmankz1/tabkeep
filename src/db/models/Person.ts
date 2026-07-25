@@ -1,5 +1,4 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, children } from '@nozbe/watermelondb/decorators';
 
 export default class Person extends Model {
   static table = 'people';
@@ -7,12 +6,31 @@ export default class Person extends Model {
     transactions: { type: 'has_many' as const, foreignKey: 'person_id' },
   };
 
-  @field('user_id') userId!: string;
-  @field('name') name!: string;
-  @field('phone') phone?: string;
-  @date('created_at') createdAt!: Date;
-  @date('updated_at') updatedAt!: Date;
-  @field('deleted_at') deletedAt?: number;
+  get name(): string {
+    return this._getRaw('name') as string;
+  }
+  set name(value: string) {
+    this._setRaw('name', value);
+  }
 
-  @children('transactions') transactions!: unknown;
+  get phone(): string | undefined {
+    return (this._getRaw('phone') as string | null) ?? undefined;
+  }
+  set phone(value: string | undefined) {
+    this._setRaw('phone', value ?? null);
+  }
+
+  get createdAt(): Date {
+    return new Date(this._getRaw('created_at') as number);
+  }
+  set createdAt(date: Date) {
+    this._setRaw('created_at', +new Date(date));
+  }
+
+  get deletedAt(): number | undefined {
+    return (this._getRaw('deleted_at') as number | null) ?? undefined;
+  }
+  set deletedAt(value: number | undefined) {
+    this._setRaw('deleted_at', value ?? null);
+  }
 }

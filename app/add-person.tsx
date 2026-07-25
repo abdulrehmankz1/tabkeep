@@ -35,11 +35,11 @@ export default function AddPerson() {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!name.trim() || submittingRef.current) return;
     submittingRef.current = true;
     haptics.success();
-    const id = addPerson(name.trim(), phone.trim() || undefined);
+    const id = await addPerson(name.trim(), phone.trim() || undefined);
     router.replace(`/person/${id}`);
   }
 
