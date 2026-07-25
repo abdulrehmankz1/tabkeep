@@ -84,96 +84,94 @@ export default function AddExpense() {
   }
 
   return (
-    <View style={styles.overlay}>
+    <KeyboardAvoidingView
+      style={styles.overlay}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Pressable style={styles.overlayBackdrop} onPress={() => router.back()} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoider}
-      >
-        <View style={[styles.sheet, { maxHeight: windowHeight * 0.9 }]}>
-          <View style={styles.handle} />
-          <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
-            <AmountDisplay paisas={rawToPaisas(raw)} />
+      <View style={[styles.sheet, { maxHeight: windowHeight * 0.9 }]}>
+        <View style={styles.handle} />
+        <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
+          <AmountDisplay paisas={rawToPaisas(raw)} />
 
-            <Pressable
-              style={[styles.categoryRow, categoryListOpen && styles.categoryRowOpen]}
-              onPress={() => setCategoryListOpen((open) => !open)}
-            >
-              <View style={[styles.categoryIconWrap, { backgroundColor: chipColors[categoryIndex % chipColors.length] }]}>
-                <Icon name={category.icon} size={14} color="#FFFFFF" />
-              </View>
-              <View style={styles.categoryTextWrap}>
-                <Text style={styles.categoryLabel}>Category</Text>
-                <Text style={styles.categoryName}>{category.name}</Text>
-              </View>
-              <View style={{ transform: [{ rotate: categoryListOpen ? '180deg' : '0deg' }] }}>
-                <Icon name="chevrondown" size={16} color={colors.textSecondary} />
-              </View>
-            </Pressable>
-
-            {categoryListOpen && (
-              <View style={styles.categoryList}>
-                {CATEGORIES.map((c, i) => (
-                  <Pressable
-                    key={c.name}
-                    style={[styles.categoryListItem, i === CATEGORIES.length - 1 && styles.categoryListItemLast]}
-                    onPress={() => {
-                      setCategoryIndex(i);
-                      setCategoryListOpen(false);
-                    }}
-                  >
-                    <View style={[styles.categoryIconWrap, { backgroundColor: chipColors[i % chipColors.length] }]}>
-                      <Icon name={c.icon} size={14} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.categoryListText}>{c.name}</Text>
-                    {i === categoryIndex && <Icon name="check" size={16} color={colors.textPrimary} />}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            <View style={styles.dateTimeRow}>
-              <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.rowLabel}>Date</Text>
-                <Text style={styles.rowValue}>{formatDate(date)}</Text>
-              </Pressable>
-              <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
-                <Text style={styles.rowLabel}>Time</Text>
-                <Text style={styles.rowValue}>{formatTime(date)}</Text>
-              </Pressable>
+          <Pressable
+            style={[styles.categoryRow, categoryListOpen && styles.categoryRowOpen]}
+            onPress={() => setCategoryListOpen((open) => !open)}
+          >
+            <View style={[styles.categoryIconWrap, { backgroundColor: chipColors[categoryIndex % chipColors.length] }]}>
+              <Icon name={category.icon} size={14} color="#FFFFFF" />
             </View>
+            <View style={styles.categoryTextWrap}>
+              <Text style={styles.categoryLabel}>Category</Text>
+              <Text style={styles.categoryName}>{category.name}</Text>
+            </View>
+            <View style={{ transform: [{ rotate: categoryListOpen ? '180deg' : '0deg' }] }}>
+              <Icon name="chevrondown" size={16} color={colors.textSecondary} />
+            </View>
+          </Pressable>
 
-            <DatePickerSheet
-              visible={showDatePicker}
-              date={date}
-              onSelect={setDate}
-              onClose={() => setShowDatePicker(false)}
-            />
+          {categoryListOpen && (
+            <View style={styles.categoryList}>
+              {CATEGORIES.map((c, i) => (
+                <Pressable
+                  key={c.name}
+                  style={[styles.categoryListItem, i === CATEGORIES.length - 1 && styles.categoryListItemLast]}
+                  onPress={() => {
+                    setCategoryIndex(i);
+                    setCategoryListOpen(false);
+                  }}
+                >
+                  <View style={[styles.categoryIconWrap, { backgroundColor: chipColors[i % chipColors.length] }]}>
+                    <Icon name={c.icon} size={14} color="#FFFFFF" />
+                  </View>
+                  <Text style={styles.categoryListText}>{c.name}</Text>
+                  {i === categoryIndex && <Icon name="check" size={16} color={colors.textPrimary} />}
+                </Pressable>
+              ))}
+            </View>
+          )}
 
-            <TimePickerSheet
-              visible={showTimePicker}
-              date={date}
-              onSelect={setDate}
-              onClose={() => setShowTimePicker(false)}
-            />
-
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              placeholder="Add a note (optional)"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.noteInput}
-            />
-
-            <NumericKeypad onKeyPress={handleKeyPress} />
-
-            <Pressable style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Save</Text>
+          <View style={styles.dateTimeRow}>
+            <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.rowLabel}>Date</Text>
+              <Text style={styles.rowValue}>{formatDate(date)}</Text>
+            </Pressable>
+            <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
+              <Text style={styles.rowLabel}>Time</Text>
+              <Text style={styles.rowValue}>{formatTime(date)}</Text>
             </Pressable>
           </View>
+
+          <DatePickerSheet
+            visible={showDatePicker}
+            date={date}
+            onSelect={setDate}
+            onClose={() => setShowDatePicker(false)}
+          />
+
+          <TimePickerSheet
+            visible={showTimePicker}
+            date={date}
+            onSelect={setDate}
+            onClose={() => setShowTimePicker(false)}
+          />
+
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="Add a note (optional)"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.noteInput}
+          />
+
+          <NumericKeypad onKeyPress={handleKeyPress} />
+
+          <Pressable style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Save</Text>
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -185,10 +183,6 @@ const createStyles = (colors: ThemeColors) =>
     },
     overlayBackdrop: {
       ...StyleSheet.absoluteFill,
-    },
-    keyboardAvoider: {
-      flexShrink: 1,
-      flexGrow: 0,
     },
     sheet: {
       backgroundColor: colors.bgSurface,
