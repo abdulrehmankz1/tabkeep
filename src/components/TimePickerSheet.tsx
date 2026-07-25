@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { darkColors, radius, spacing } from '../theme';
+import { radius, spacing, ThemeColors, useTheme } from '../theme';
 
 interface TimePickerSheetProps {
   visible: boolean;
@@ -17,14 +17,18 @@ const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 const PERIODS = ['AM', 'PM'];
 
+type Styles = ReturnType<typeof createStyles>;
+
 function WheelColumn({
   data,
   selectedIndex,
   onChange,
+  styles,
 }: {
   data: string[];
   selectedIndex: number;
   onChange: (index: number) => void;
+  styles: Styles;
 }) {
   const listRef = useRef<FlatList<string>>(null);
 
@@ -57,6 +61,9 @@ function WheelColumn({
 }
 
 export function TimePickerSheet({ visible, date, onSelect, onClose }: TimePickerSheetProps) {
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const hour24 = date.getHours();
   const initialPeriod = hour24 >= 12 ? 1 : 0;
   const initialHour = hour24 % 12 === 0 ? 12 : hour24 % 12;
@@ -85,11 +92,11 @@ export function TimePickerSheet({ visible, date, onSelect, onClose }: TimePicker
 
           <View style={styles.wheelRow}>
             <View style={styles.highlightBar} pointerEvents="none" />
-            <WheelColumn data={HOURS} selectedIndex={hourIndex} onChange={setHourIndex} />
+            <WheelColumn data={HOURS} selectedIndex={hourIndex} onChange={setHourIndex} styles={styles} />
             <Text style={styles.colon}>:</Text>
-            <WheelColumn data={MINUTES} selectedIndex={minuteIndex} onChange={setMinuteIndex} />
+            <WheelColumn data={MINUTES} selectedIndex={minuteIndex} onChange={setMinuteIndex} styles={styles} />
             <View style={styles.periodColumn}>
-              <WheelColumn data={PERIODS} selectedIndex={periodIndex} onChange={setPeriodIndex} />
+              <WheelColumn data={PERIODS} selectedIndex={periodIndex} onChange={setPeriodIndex} styles={styles} />
             </View>
           </View>
 
@@ -102,87 +109,88 @@ export function TimePickerSheet({ visible, date, onSelect, onClose }: TimePicker
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlayBackdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  sheet: {
-    backgroundColor: darkColors.bgSurface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.border,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  title: {
-    color: darkColors.textPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  wheelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  highlightBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: ITEM_HEIGHT * PADDING_ROWS,
-    height: ITEM_HEIGHT,
-    borderRadius: radius.button,
-    backgroundColor: darkColors.bgElevated,
-  },
-  wheelItem: {
-    height: ITEM_HEIGHT,
-    width: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wheelText: {
-    color: darkColors.textSecondary,
-    fontSize: 16,
-    fontFamily: 'Inter_400Regular',
-  },
-  wheelTextSelected: {
-    color: darkColors.textPrimary,
-    fontSize: 20,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  colon: {
-    color: darkColors.textPrimary,
-    fontSize: 20,
-    fontFamily: 'Inter_600SemiBold',
-    marginHorizontal: 2,
-  },
-  periodColumn: {
-    marginLeft: spacing.sm,
-  },
-  doneButton: {
-    backgroundColor: darkColors.accent,
-    borderRadius: radius.button,
-    paddingVertical: spacing.sm + 7,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  doneButtonText: {
-    color: darkColors.bgPrimary,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    overlayBackdrop: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    sheet: {
+      backgroundColor: colors.bgSurface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: spacing.lg,
+      paddingHorizontal: spacing.md,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginTop: 10,
+      marginBottom: 6,
+    },
+    title: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    wheelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    highlightBar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: ITEM_HEIGHT * PADDING_ROWS,
+      height: ITEM_HEIGHT,
+      borderRadius: radius.button,
+      backgroundColor: colors.bgElevated,
+    },
+    wheelItem: {
+      height: ITEM_HEIGHT,
+      width: 56,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    wheelText: {
+      color: colors.textSecondary,
+      fontSize: 16,
+      fontFamily: 'Inter_400Regular',
+    },
+    wheelTextSelected: {
+      color: colors.textPrimary,
+      fontSize: 20,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    colon: {
+      color: colors.textPrimary,
+      fontSize: 20,
+      fontFamily: 'Inter_600SemiBold',
+      marginHorizontal: 2,
+    },
+    periodColumn: {
+      marginLeft: spacing.sm,
+    },
+    doneButton: {
+      backgroundColor: colors.accent,
+      borderRadius: radius.button,
+      paddingVertical: spacing.sm + 7,
+      alignItems: 'center',
+      marginTop: spacing.md,
+    },
+    doneButtonText: {
+      color: colors.bgPrimary,
+      fontSize: 15,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  });

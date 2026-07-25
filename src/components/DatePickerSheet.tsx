@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { Calendar, DateData } from 'react-native-calendars';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { darkColors, radius, spacing } from '../theme';
+import { radius, spacing, ThemeColors, useTheme } from '../theme';
 
 interface DatePickerSheetProps {
   visible: boolean;
@@ -17,6 +18,9 @@ function toDateString(date: Date) {
 }
 
 export function DatePickerSheet({ visible, date, onSelect, onClose }: DatePickerSheetProps) {
+  const colors = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   function handleDayPress(day: DateData) {
     onSelect(new Date(day.year, day.month - 1, day.day));
     onClose();
@@ -34,16 +38,16 @@ export function DatePickerSheet({ visible, date, onSelect, onClose }: DatePicker
             onDayPress={handleDayPress}
             markedDates={{ [toDateString(date)]: { selected: true } }}
             theme={{
-              calendarBackground: darkColors.bgSurface,
-              textSectionTitleColor: darkColors.textSecondary,
-              dayTextColor: darkColors.textPrimary,
-              textDisabledColor: darkColors.border,
-              todayTextColor: darkColors.textPrimary,
-              todayBackgroundColor: darkColors.bgElevated,
-              selectedDayBackgroundColor: darkColors.accent,
-              selectedDayTextColor: darkColors.bgPrimary,
-              monthTextColor: darkColors.textPrimary,
-              arrowColor: darkColors.textPrimary,
+              calendarBackground: colors.bgSurface,
+              textSectionTitleColor: colors.textSecondary,
+              dayTextColor: colors.textPrimary,
+              textDisabledColor: colors.border,
+              todayTextColor: colors.textPrimary,
+              todayBackgroundColor: colors.bgElevated,
+              selectedDayBackgroundColor: colors.accent,
+              selectedDayTextColor: colors.bgPrimary,
+              monthTextColor: colors.textPrimary,
+              arrowColor: colors.textPrimary,
               textDayFontFamily: 'Inter_400Regular',
               textMonthFontFamily: 'Inter_600SemiBold',
               textDayHeaderFontFamily: 'Inter_500Medium',
@@ -59,32 +63,33 @@ export function DatePickerSheet({ visible, date, onSelect, onClose }: DatePicker
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlayBackdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  sheet: {
-    backgroundColor: darkColors.bgSurface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: spacing.lg,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: darkColors.border,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  calendar: {
-    borderRadius: radius.card,
-    paddingBottom: spacing.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    overlayBackdrop: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    sheet: {
+      backgroundColor: colors.bgSurface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: spacing.lg,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginTop: 10,
+      marginBottom: 6,
+    },
+    calendar: {
+      borderRadius: radius.card,
+      paddingBottom: spacing.sm,
+    },
+  });
