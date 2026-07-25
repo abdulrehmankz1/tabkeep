@@ -14,7 +14,7 @@
     "android": {
       "package": "com.abdulrehman.tabkeep",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0A0A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -27,7 +27,33 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-contacts",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow TabKeep to access your camera to scan receipts."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow TabKeep to access your photos to pick a receipt image."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon-light.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#0A0A0A"
+          }
+        }
+      ]
     ]
   }
 }
