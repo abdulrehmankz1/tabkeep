@@ -6,17 +6,21 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { applyGlobalFont } from '../src/lib/applyGlobalFont';
 import { useAppFlowStore } from '../src/store/useAppFlowStore';
+import { useResolvedTheme, useTheme } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const isSignedIn = useAppFlowStore((s) => s.isSignedIn);
+  const colors = useTheme();
+  const resolvedTheme = useResolvedTheme();
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -37,6 +41,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!isSignedIn}>
           <Stack.Screen name="(auth)" />
@@ -46,6 +51,10 @@ export default function RootLayout() {
           <Stack.Screen name="history" />
           <Stack.Screen name="report-detail" />
           <Stack.Screen name="bin" />
+          <Stack.Screen name="currency" />
+          <Stack.Screen name="theme" />
+          <Stack.Screen name="about" />
+          <Stack.Screen name="backup" />
           <Stack.Screen name="expense/[id]" />
           <Stack.Screen name="person/[id]" />
           <Stack.Screen
@@ -58,7 +67,7 @@ export default function RootLayout() {
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
-              contentStyle: { backgroundColor: '#0A0A0A' },
+              contentStyle: { backgroundColor: colors.bgPrimary },
             }}
           />
           <Stack.Screen
@@ -66,7 +75,7 @@ export default function RootLayout() {
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
-              contentStyle: { backgroundColor: '#0A0A0A' },
+              contentStyle: { backgroundColor: colors.bgPrimary },
             }}
           />
           <Stack.Screen
@@ -74,7 +83,7 @@ export default function RootLayout() {
             options={{
               presentation: 'modal',
               animation: 'slide_from_bottom',
-              contentStyle: { backgroundColor: '#0A0A0A' },
+              contentStyle: { backgroundColor: colors.bgPrimary },
             }}
           />
         </Stack.Protected>
