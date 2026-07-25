@@ -75,64 +75,62 @@ export default function AddTransaction() {
   }
 
   return (
-    <View style={styles.overlay}>
+    <KeyboardAvoidingView
+      style={styles.overlay}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Pressable style={styles.overlayBackdrop} onPress={() => router.back()} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoider}
-      >
-        <View style={[styles.sheet, { maxHeight: windowHeight * 0.9 }]}>
-          <View style={styles.handle} />
-          <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
-            <Text style={[styles.directionLabel, { color: tintColor }]}>
-              {isGave ? 'You gave' : 'You got'} &middot; {person?.name ?? ''}
-            </Text>
-            <AmountDisplay paisas={rawToPaisas(raw)} />
+      <View style={[styles.sheet, { maxHeight: windowHeight * 0.9 }]}>
+        <View style={styles.handle} />
+        <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
+          <Text style={[styles.directionLabel, { color: tintColor }]}>
+            {isGave ? 'You gave' : 'You got'} &middot; {person?.name ?? ''}
+          </Text>
+          <AmountDisplay paisas={rawToPaisas(raw)} />
 
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              placeholder="What for? (optional)"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.noteInput}
-            />
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="What for? (optional)"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.noteInput}
+          />
 
-            <View style={styles.dateTimeRow}>
-              <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.rowLabel}>Date</Text>
-                <Text style={styles.rowValue}>{formatDate(date)}</Text>
-              </Pressable>
-              <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
-                <Text style={styles.rowLabel}>Time</Text>
-                <Text style={styles.rowValue}>{formatTime(date)}</Text>
-              </Pressable>
-            </View>
-
-            <DatePickerSheet
-              visible={showDatePicker}
-              date={date}
-              onSelect={setDate}
-              onClose={() => setShowDatePicker(false)}
-            />
-            <TimePickerSheet
-              visible={showTimePicker}
-              date={date}
-              onSelect={setDate}
-              onClose={() => setShowTimePicker(false)}
-            />
-
-            <NumericKeypad onKeyPress={handleKeyPress} />
-
-            <Pressable
-              style={[styles.saveButton, { borderColor: tintColor }]}
-              onPress={handleSave}
-            >
-              <Text style={[styles.saveButtonText, { color: tintColor }]}>Save</Text>
+          <View style={styles.dateTimeRow}>
+            <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.rowLabel}>Date</Text>
+              <Text style={styles.rowValue}>{formatDate(date)}</Text>
+            </Pressable>
+            <Pressable style={[styles.row, styles.dateTimeCell]} onPress={() => setShowTimePicker(true)}>
+              <Text style={styles.rowLabel}>Time</Text>
+              <Text style={styles.rowValue}>{formatTime(date)}</Text>
             </Pressable>
           </View>
+
+          <DatePickerSheet
+            visible={showDatePicker}
+            date={date}
+            onSelect={setDate}
+            onClose={() => setShowDatePicker(false)}
+          />
+          <TimePickerSheet
+            visible={showTimePicker}
+            date={date}
+            onSelect={setDate}
+            onClose={() => setShowTimePicker(false)}
+          />
+
+          <NumericKeypad onKeyPress={handleKeyPress} />
+
+          <Pressable
+            style={[styles.saveButton, { borderColor: tintColor }]}
+            onPress={handleSave}
+          >
+            <Text style={[styles.saveButtonText, { color: tintColor }]}>Save</Text>
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -144,10 +142,6 @@ const createStyles = (colors: ThemeColors) =>
     },
     overlayBackdrop: {
       ...StyleSheet.absoluteFill,
-    },
-    keyboardAvoider: {
-      flexShrink: 1,
-      flexGrow: 0,
     },
     sheet: {
       backgroundColor: colors.bgSurface,

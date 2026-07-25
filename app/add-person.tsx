@@ -44,49 +44,47 @@ export default function AddPerson() {
   }
 
   return (
-    <View style={styles.overlay}>
+    <KeyboardAvoidingView
+      style={styles.overlay}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Pressable style={styles.overlayBackdrop} onPress={() => router.back()} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoider}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
-            <Text style={styles.title}>Add person</Text>
+      <View style={styles.sheet}>
+        <View style={styles.handle} />
+        <View style={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}>
+          <Text style={styles.title}>Add person</Text>
 
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="Name"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.input}
-            />
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Phone (optional)"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="phone-pad"
-              style={styles.input}
-            />
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Name"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.input}
+          />
+          <TextInput
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="Phone (optional)"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="phone-pad"
+            style={styles.input}
+          />
 
-            <Pressable style={styles.importButton} onPress={handleImportFromContacts}>
-              <Icon name="users" size={16} color={colors.textPrimary} />
-              <Text style={styles.importButtonText}>Import from contacts</Text>
-            </Pressable>
+          <Pressable style={styles.importButton} onPress={handleImportFromContacts}>
+            <Icon name="users" size={16} color={colors.textPrimary} />
+            <Text style={styles.importButtonText}>Import from contacts</Text>
+          </Pressable>
 
-            <Pressable
-              style={[styles.saveButton, !name.trim() && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={!name.trim()}
-            >
-              <Text style={styles.saveButtonText}>Save</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            style={[styles.saveButton, !name.trim() && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!name.trim()}
+          >
+            <Text style={styles.saveButtonText}>Save</Text>
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -98,10 +96,6 @@ const createStyles = (colors: ThemeColors) =>
     },
     overlayBackdrop: {
       ...StyleSheet.absoluteFill,
-    },
-    keyboardAvoider: {
-      flexShrink: 1,
-      flexGrow: 0,
     },
     sheet: {
       backgroundColor: colors.bgSurface,
