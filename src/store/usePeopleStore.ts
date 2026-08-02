@@ -10,6 +10,7 @@ import {
   purgeExpiredPeople,
   restorePerson as restorePersonInDb,
 } from '../db/repositories/people';
+import { scheduleSync } from '../db/sync';
 import { BIN_RETENTION_DAYS } from '../lib/bin';
 import { useDialogStore } from './useDialogStore';
 
@@ -36,6 +37,7 @@ export const usePeopleStore = create<PeopleState>((set) => ({
   addPerson: async (name, phone) => {
     const person = await createPerson(name, phone);
     set((state) => ({ people: [...state.people, person] }));
+    scheduleSync();
     return person.id;
   },
   addEntry: async (personId, entry) => {
@@ -45,22 +47,26 @@ export const usePeopleStore = create<PeopleState>((set) => ({
         p.id === personId ? { ...p, entries: [created, ...p.entries] } : p,
       ),
     }));
+    scheduleSync();
   },
   moveToBin: async (id) => {
     await movePersonToBin(id);
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, deletedAt: Date.now() } : p)),
     }));
+    scheduleSync();
   },
   restorePerson: async (id) => {
     await restorePersonInDb(id);
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, deletedAt: undefined } : p)),
     }));
+    scheduleSync();
   },
   permanentlyDelete: async (id) => {
     await permanentlyDeletePerson(id);
     set((state) => ({ people: state.people.filter((p) => p.id !== id) }));
+    scheduleSync();
   },
   purgeExpiredBinItems: async () => {
     await purgeExpiredPeople();

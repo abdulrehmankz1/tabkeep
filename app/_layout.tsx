@@ -10,8 +10,10 @@ import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
+import { scheduleSync } from '../src/db/sync';
 import { applyGlobalFont } from '../src/lib/applyGlobalFont';
 import { parseAuthTokensFromUrl } from '../src/lib/authDeepLink';
 import { useAppFlowStore } from '../src/store/useAppFlowStore';
@@ -50,12 +52,23 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!authReady) return;
-    Promise.all([hydrateExpenses(), hydratePeople()]).finally(() => setDbReady(true));
+    const sync = userId ? scheduleSync() : Promise.resolve();
+    sync.finally(() => {
+      Promise.all([hydrateExpenses(), hydratePeople()]).finally(() => setDbReady(true));
+    });
   }, [authReady, userId, hydrateExpenses, hydratePeople]);
 
   useEffect(() => {
     return useSettingsStore.persist.onFinishHydration(() => setSettingsReady(true));
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !userId) return;
+      scheduleSync().then(() => Promise.all([hydrateExpenses(), hydratePeople()]));
+    });
+    return () => subscription.remove();
+  }, [userId, hydrateExpenses, hydratePeople]);
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
