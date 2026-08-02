@@ -1,78 +1,94 @@
-import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Icon } from '../../src/components/icons';
+import { Wordmark } from '../../src/components/Wordmark';
 import { haptics } from '../../src/lib/haptics';
 import { useAppFlowStore } from '../../src/store/useAppFlowStore';
 import { useDialogStore } from '../../src/store/useDialogStore';
 import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
-export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
+export default function ResetPassword() {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const sendPasswordResetEmail = useAppFlowStore((s) => s.sendPasswordResetEmail);
+  const updatePassword = useAppFlowStore((s) => s.updatePassword);
   const colors = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  async function handleSendResetLink() {
-    if (submitting || !email.trim()) return;
+  async function handleUpdatePassword() {
+    if (submitting || !password || !confirmPassword) return;
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
-    const { error: resetError } = await sendPasswordResetEmail(email.trim());
+    const { error: updateError } = await updatePassword(password);
     setSubmitting(false);
-    if (resetError) {
-      setError(resetError);
+    if (updateError) {
+      setError(updateError);
       return;
     }
     haptics.success();
     useDialogStore.getState().show({
-      title: 'Check your email',
-      message: `If an account exists for ${email.trim()}, we've sent a link to reset your password.`,
-      confirmText: 'Done',
-      onConfirm: () => router.back(),
+      title: 'Password updated',
+      message: 'Your password has been changed.',
+      confirmText: 'Continue',
+      onConfirm: () => {},
     });
   }
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Icon name="chevronleft" size={22} color={colors.textPrimary} />
-        </Pressable>
-      </View>
-
       <View style={styles.content}>
-        <Text style={styles.title}>Reset your password</Text>
-        <Text style={styles.subtitle}>
-          Enter the email you signed up with and we&apos;ll send you a link to reset your password.
-        </Text>
+        <View style={styles.brandRow}>
+          <Wordmark size={30} />
+        </View>
+        <Text style={styles.title}>Set a new password</Text>
+        <Text style={styles.subtitle}>Choose a new password for your account.</Text>
 
         <TextInput
-          value={email}
+          value={password}
           onChangeText={(text) => {
-            setEmail(text);
+            setPassword(text);
             setError(null);
           }}
-          placeholder="Email"
+          placeholder="New password"
           placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-          keyboardType="email-address"
+          secureTextEntry
+          style={styles.input}
+        />
+        <TextInput
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            setError(null);
+          }}
+          placeholder="Confirm new password"
+          placeholderTextColor={colors.textSecondary}
+          secureTextEntry
           style={styles.input}
         />
 
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <Pressable
-          style={[styles.primaryButton, (submitting || !email.trim()) && styles.primaryButtonDisabled]}
-          onPress={handleSendResetLink}
-          disabled={submitting || !email.trim()}
+          style={[
+            styles.primaryButton,
+            (submitting || !password || !confirmPassword) && styles.primaryButtonDisabled,
+          ]}
+          onPress={handleUpdatePassword}
+          disabled={submitting || !password || !confirmPassword}
         >
           {submitting ? (
             <ActivityIndicator color={colors.bgPrimary} />
           ) : (
-            <Text style={styles.primaryButtonText}>Send reset link</Text>
+            <Text style={styles.primaryButtonText}>Update password</Text>
           )}
         </Pressable>
       </View>
@@ -86,16 +102,14 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
       backgroundColor: colors.bgPrimary,
     },
-    header: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm + 2,
-    },
     content: {
       flex: 1,
       justifyContent: 'center',
       paddingHorizontal: spacing.md,
       gap: spacing.sm + 6,
-      marginTop: -spacing.xl,
+    },
+    brandRow: {
+      marginBottom: spacing.lg,
     },
     title: {
       color: colors.textPrimary,
@@ -106,7 +120,6 @@ const createStyles = (colors: ThemeColors) =>
     subtitle: {
       color: colors.textSecondary,
       fontSize: 14,
-      lineHeight: 20,
       marginBottom: spacing.sm,
     },
     error: {

@@ -5,14 +5,16 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Linking from 'expo-linking';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { seedIfEmpty } from '../src/db/seed';
 import { applyGlobalFont } from '../src/lib/applyGlobalFont';
+import { parseAuthTokensFromUrl } from '../src/lib/authDeepLink';
 import { useAppFlowStore } from '../src/store/useAppFlowStore';
 import { useExpensesStore } from '../src/store/useExpensesStore';
 import { usePeopleStore } from '../src/store/usePeopleStore';
@@ -21,8 +23,17 @@ import { useResolvedTheme, useTheme } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
 
+function handleAuthDeepLink(url: string) {
+  const tokens = parseAuthTokensFromUrl(url);
+  if (!tokens || tokens.type !== 'recovery') return;
+  useAppFlowStore.getState().beginPasswordRecovery(tokens.accessToken, tokens.refreshToken).then(({ error }) => {
+    if (!error) router.replace('/reset-password');
+  });
+}
+
 export default function RootLayout() {
   const isSignedIn = useAppFlowStore((s) => s.isSignedIn);
+  const passwordRecovery = useAppFlowStore((s) => s.passwordRecovery);
   const colors = useTheme();
   const resolvedTheme = useResolvedTheme();
   const hydrateExpenses = useExpensesStore((s) => s.hydrate);
@@ -47,6 +58,14 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) handleAuthDeepLink(url);
+    });
+    const subscription = Linking.addEventListener('url', ({ url }) => handleAuthDeepLink(url));
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     if (fontsLoaded && dbReady && settingsReady) {
       applyGlobalFont();
       SplashScreen.hideAsync();
@@ -61,10 +80,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={!isSignedIn}>
+        <Stack.Protected guard={!isSignedIn || passwordRecovery}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
-        <Stack.Protected guard={isSignedIn}>
+        <Stack.Protected guard={isSignedIn && !passwordRecovery}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="history" />
           <Stack.Screen name="report-detail" />
