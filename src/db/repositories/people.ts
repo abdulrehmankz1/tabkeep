@@ -2,6 +2,7 @@ import { Q } from '@nozbe/watermelondb';
 import { MockPerson, PersonEntry } from '../../data/mockPeople';
 import { isExpiredInBin } from '../../lib/bin';
 import { formatDisplayDate, formatDisplayTime } from '../../lib/dateGroup';
+import { currentUserId } from '../currentUser';
 import { database } from '../index';
 import Person from '../models/Person';
 import Transaction from '../models/Transaction';
@@ -44,9 +45,10 @@ function toEntry(record: Transaction): PersonEntry {
 }
 
 export async function fetchAllPeople(): Promise<MockPerson[]> {
+  const uid = currentUserId() ?? '';
   const [personRecords, entryRecords] = await Promise.all([
-    people().query(Q.sortBy('created_at', Q.desc)).fetch(),
-    transactions().query(Q.sortBy('created_at', Q.desc)).fetch(),
+    people().query(Q.where('user_id', uid), Q.sortBy('created_at', Q.desc)).fetch(),
+    transactions().query(Q.where('user_id', uid), Q.sortBy('created_at', Q.desc)).fetch(),
   ]);
 
   const entriesByPerson = new Map<string, PersonEntry[]>();
@@ -69,6 +71,7 @@ export async function createPerson(name: string, phone?: string, createdAt: Date
   let created!: Person;
   await database.write(async () => {
     created = await people().create((p) => {
+      p.userId = currentUserId();
       p.name = name;
       p.phone = phone;
       p.createdAt = createdAt;
@@ -85,6 +88,7 @@ export async function createEntry(
   let created!: Transaction;
   await database.write(async () => {
     created = await transactions().create((t) => {
+      t.userId = currentUserId();
       t.personId = personId;
       t.amount = input.amount;
       t.direction = input.direction;
@@ -126,7 +130,9 @@ export async function permanentlyDeletePerson(id: string): Promise<void> {
 }
 
 export async function purgeExpiredPeople(): Promise<void> {
-  const binned = await people().query(Q.where('deleted_at', Q.notEq(null))).fetch();
+  const binned = await people()
+    .query(Q.where('user_id', currentUserId() ?? ''), Q.where('deleted_at', Q.notEq(null)))
+    .fetch();
   const expired = binned.filter((r) => r.deletedAt !== undefined && isExpiredInBin(r.deletedAt));
   if (expired.length === 0) return;
 
@@ -143,9 +149,10 @@ export async function purgeExpiredPeople(): Promise<void> {
 }
 
 export async function fetchAllPeopleRaw(): Promise<RawPersonRecord[]> {
+  const uid = currentUserId() ?? '';
   const [personRecords, entryRecords] = await Promise.all([
-    people().query().fetch(),
-    transactions().query().fetch(),
+    people().query(Q.where('user_id', uid)).fetch(),
+    transactions().query(Q.where('user_id', uid)).fetch(),
   ]);
 
   const entriesByPerson = new Map<string, RawEntryRecord[]>();
@@ -171,14 +178,16 @@ export async function fetchAllPeopleRaw(): Promise<RawPersonRecord[]> {
 }
 
 export async function replaceAllPeople(records: RawPersonRecord[]): Promise<void> {
+  const uid = currentUserId();
   const [existingPeople, existingEntries] = await Promise.all([
-    people().query().fetch(),
-    transactions().query().fetch(),
+    people().query(Q.where('user_id', uid ?? '')).fetch(),
+    transactions().query(Q.where('user_id', uid ?? '')).fetch(),
   ]);
 
   await database.write(async () => {
     const newPeople = records.map((input) =>
       people().prepareCreate((p) => {
+        p.userId = uid;
         p.name = input.name;
         p.phone = input.phone;
         p.createdAt = new Date(input.createdAt);
@@ -188,6 +197,7 @@ export async function replaceAllPeople(records: RawPersonRecord[]): Promise<void
     const newEntries = records.flatMap((input, i) =>
       input.entries.map((entry) =>
         transactions().prepareCreate((t) => {
+          t.userId = uid;
           t.personId = newPeople[i].id;
           t.amount = entry.amount;
           t.direction = entry.direction;

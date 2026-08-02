@@ -13,12 +13,15 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const signUp = useAppFlowStore((s) => s.signUp);
+  const signInWithGoogle = useAppFlowStore((s) => s.signInWithGoogle);
   const colors = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const busy = submitting || googleSubmitting;
 
   async function handleSignUp() {
-    if (submitting || !email.trim() || !password) return;
+    if (busy || !email.trim() || !password) return;
     setSubmitting(true);
     setError(null);
     const { error: signUpError, needsEmailConfirmation } = await signUp(email.trim(), password);
@@ -38,13 +41,17 @@ export default function SignUp() {
     }
   }
 
-  function handleGoogleSignIn() {
-    useDialogStore.getState().show({
-      title: 'Continue with Google',
-      message: 'Google sign-in is coming soon — use email and password for now.',
-      confirmText: 'Got it',
-      onConfirm: () => {},
-    });
+  async function handleGoogleSignIn() {
+    if (busy) return;
+    setGoogleSubmitting(true);
+    setError(null);
+    const { error: googleError } = await signInWithGoogle();
+    setGoogleSubmitting(false);
+    if (googleError) {
+      setError(googleError);
+      return;
+    }
+    haptics.success();
   }
 
   return (
@@ -83,9 +90,9 @@ export default function SignUp() {
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <Pressable
-          style={[styles.primaryButton, (submitting || !email.trim() || !password) && styles.primaryButtonDisabled]}
+          style={[styles.primaryButton, (busy || !email.trim() || !password) && styles.primaryButtonDisabled]}
           onPress={handleSignUp}
-          disabled={submitting || !email.trim() || !password}
+          disabled={busy || !email.trim() || !password}
         >
           {submitting ? (
             <ActivityIndicator color={colors.bgPrimary} />
@@ -94,8 +101,16 @@ export default function SignUp() {
           )}
         </Pressable>
 
-        <Pressable style={styles.secondaryButton} onPress={handleGoogleSignIn}>
-          <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+        <Pressable
+          style={[styles.secondaryButton, busy && styles.primaryButtonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={busy}
+        >
+          {googleSubmitting ? (
+            <ActivityIndicator color={colors.textPrimary} />
+          ) : (
+            <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+          )}
         </Pressable>
 
         <View style={styles.footerRow}>

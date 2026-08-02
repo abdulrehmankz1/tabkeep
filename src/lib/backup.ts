@@ -2,6 +2,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { fetchAllExpensesRaw, replaceAllExpenses } from '../db/repositories/expenses';
 import { fetchAllPeopleRaw, replaceAllPeople } from '../db/repositories/people';
+import { scheduleSync } from '../db/sync';
 import { useExpensesStore } from '../store/useExpensesStore';
 import { usePeopleStore } from '../store/usePeopleStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -50,5 +51,6 @@ export async function importBackup(): Promise<'restored' | 'canceled'> {
     themePreference: data.settings.themePreference,
   });
   await Promise.all([useExpensesStore.getState().hydrate(), usePeopleStore.getState().hydrate()]);
+  scheduleSync();
   return 'restored';
 }

@@ -9,6 +9,7 @@ import {
   purgeExpiredExpenses,
   restoreExpense as restoreExpenseInDb,
 } from '../db/repositories/expenses';
+import { scheduleSync } from '../db/sync';
 import { BIN_RETENTION_DAYS } from '../lib/bin';
 import { useDialogStore } from './useDialogStore';
 
@@ -34,6 +35,7 @@ export const useExpensesStore = create<ExpensesState>((set) => ({
   addExpense: async (input) => {
     const expense = await createExpense(input);
     set((state) => ({ expenses: [expense, ...state.expenses] }));
+    scheduleSync();
     return expense.id;
   },
   moveToBin: async (id) => {
@@ -41,16 +43,19 @@ export const useExpensesStore = create<ExpensesState>((set) => ({
     set((state) => ({
       expenses: state.expenses.map((e) => (e.id === id ? { ...e, deletedAt: Date.now() } : e)),
     }));
+    scheduleSync();
   },
   restoreExpense: async (id) => {
     await restoreExpenseInDb(id);
     set((state) => ({
       expenses: state.expenses.map((e) => (e.id === id ? { ...e, deletedAt: undefined } : e)),
     }));
+    scheduleSync();
   },
   permanentlyDelete: async (id) => {
     await permanentlyDeleteExpense(id);
     set((state) => ({ expenses: state.expenses.filter((e) => e.id !== id) }));
+    scheduleSync();
   },
   purgeExpiredBinItems: async () => {
     await purgeExpiredExpenses();

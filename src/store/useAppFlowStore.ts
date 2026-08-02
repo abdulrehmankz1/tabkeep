@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AuthSession, AuthUser } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { parseAuthTokensFromUrl } from '../lib/authDeepLink';
 import { supabase } from '../lib/supabase';
 
 interface AppFlowState {
@@ -15,6 +17,7 @@ interface AppFlowState {
   completeOnboarding: () => void;
   signUp: (email: string, password: string) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   sendPasswordResetEmail: (email: string) => Promise<{ error: string | null }>;
   beginPasswordRecovery: (accessToken: string, refreshToken: string) => Promise<{ error: string | null }>;
@@ -38,6 +41,28 @@ export const useAppFlowStore = create<AppFlowState>()(
       signIn: async (email, password) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         return { error: error?.message ?? null };
+      },
+      signInWithGoogle: async () => {
+        const redirectUrl = Linking.createURL('/');
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
+        });
+        if (error || !data.url) return { error: error?.message ?? 'Could not start Google sign-in.' };
+
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+        if (result.type !== 'success') {
+          return { error: result.type === 'cancel' || result.type === 'dismiss' ? null : 'Google sign-in failed.' };
+        }
+
+        const tokens = parseAuthTokensFromUrl(result.url);
+        if (!tokens) return { error: 'Google sign-in failed.' };
+
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: tokens.accessToken,
+          refresh_token: tokens.refreshToken,
+        });
+        return { error: sessionError?.message ?? null };
       },
       signOut: async () => {
         await supabase.auth.signOut();

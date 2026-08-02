@@ -6,6 +6,13 @@ export default class Transaction extends Model {
     people: { type: 'belongs_to' as const, key: 'person_id' },
   };
 
+  get userId(): string | undefined {
+    return (this._getRaw('user_id') as string | null) ?? undefined;
+  }
+  set userId(value: string | undefined) {
+    this._setRaw('user_id', value ?? null);
+  }
+
   get personId(): string {
     return this._getRaw('person_id') as string;
   }

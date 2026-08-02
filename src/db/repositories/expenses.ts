@@ -3,6 +3,7 @@ import { MockExpense } from '../../data/mockExpenses';
 import { isExpiredInBin } from '../../lib/bin';
 import { CATEGORY_META } from '../../lib/categoryMeta';
 import { dateGroupFor, isoDateFor, formatDisplayTime } from '../../lib/dateGroup';
+import { currentUserId } from '../currentUser';
 import { database } from '../index';
 import Expense from '../models/Expense';
 
@@ -47,7 +48,9 @@ function toMockExpense(record: Expense): MockExpense {
 }
 
 export async function fetchAllExpenses(): Promise<MockExpense[]> {
-  const records = await collection().query(Q.sortBy('created_at', Q.desc)).fetch();
+  const records = await collection()
+    .query(Q.where('user_id', currentUserId() ?? ''), Q.sortBy('created_at', Q.desc))
+    .fetch();
   return records.map(toMockExpense);
 }
 
@@ -55,6 +58,7 @@ export async function createExpense(input: NewExpenseInput, createdAt: Date = ne
   let created!: Expense;
   await database.write(async () => {
     created = await collection().create((e) => {
+      e.userId = currentUserId();
       e.amount = input.amount;
       e.category = input.category;
       e.note = input.note;
@@ -93,7 +97,9 @@ export async function permanentlyDeleteExpense(id: string): Promise<void> {
 }
 
 export async function purgeExpiredExpenses(): Promise<void> {
-  const binned = await collection().query(Q.where('deleted_at', Q.notEq(null))).fetch();
+  const binned = await collection()
+    .query(Q.where('user_id', currentUserId() ?? ''), Q.where('deleted_at', Q.notEq(null)))
+    .fetch();
   const expired = binned.filter((r) => r.deletedAt !== undefined && isExpiredInBin(r.deletedAt));
   if (expired.length === 0) return;
   await database.write(async () => {
@@ -102,7 +108,7 @@ export async function purgeExpiredExpenses(): Promise<void> {
 }
 
 export async function fetchAllExpensesRaw(): Promise<RawExpenseRecord[]> {
-  const records = await collection().query().fetch();
+  const records = await collection().query(Q.where('user_id', currentUserId() ?? '')).fetch();
   return records.map((r) => ({
     amount: r.amount,
     category: r.category,
@@ -116,12 +122,13 @@ export async function fetchAllExpensesRaw(): Promise<RawExpenseRecord[]> {
 }
 
 export async function replaceAllExpenses(records: RawExpenseRecord[]): Promise<void> {
-  const existing = await collection().query().fetch();
+  const existing = await collection().query(Q.where('user_id', currentUserId() ?? '')).fetch();
   await database.write(async () => {
     await database.batch(
       ...existing.map((r) => r.prepareDestroyPermanently()),
       ...records.map((input) =>
         collection().prepareCreate((e) => {
+          e.userId = currentUserId();
           e.amount = input.amount;
           e.category = input.category;
           e.note = input.note;
