@@ -1,13 +1,13 @@
-export interface RecoveryTokens {
+export interface AuthUrlTokens {
   accessToken: string;
   refreshToken: string;
-  type: string;
+  type: string | null;
 }
 
-// Supabase redirects password-recovery links with the tokens in a URL hash
-// fragment (or query string, depending on client), e.g.
+// Supabase redirects auth links (password recovery, OAuth sign-in) with the
+// tokens in a URL hash fragment (or query string, depending on client), e.g.
 // tabkeep://reset-password#access_token=...&refresh_token=...&type=recovery
-export function parseAuthTokensFromUrl(url: string): RecoveryTokens | null {
+export function parseAuthTokensFromUrl(url: string): AuthUrlTokens | null {
   const hashIndex = url.indexOf('#');
   const queryIndex = url.indexOf('?');
   const fragment = hashIndex >= 0 ? url.slice(hashIndex + 1) : queryIndex >= 0 ? url.slice(queryIndex + 1) : '';
@@ -16,8 +16,7 @@ export function parseAuthTokensFromUrl(url: string): RecoveryTokens | null {
   const params = new URLSearchParams(fragment);
   const accessToken = params.get('access_token');
   const refreshToken = params.get('refresh_token');
-  const type = params.get('type');
-  if (!accessToken || !refreshToken || !type) return null;
+  if (!accessToken || !refreshToken) return null;
 
-  return { accessToken, refreshToken, type };
+  return { accessToken, refreshToken, type: params.get('type') };
 }
