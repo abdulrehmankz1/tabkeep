@@ -1,18 +1,32 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../../src/components/icons';
+import { haptics } from '../../src/lib/haptics';
+import { useAppFlowStore } from '../../src/store/useAppFlowStore';
 import { useDialogStore } from '../../src/store/useDialogStore';
 import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const sendPasswordResetEmail = useAppFlowStore((s) => s.sendPasswordResetEmail);
   const colors = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  function handleSendResetLink() {
-    if (!email.trim()) return;
+  async function handleSendResetLink() {
+    if (submitting || !email.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    const { error: resetError } = await sendPasswordResetEmail(email.trim());
+    setSubmitting(false);
+    if (resetError) {
+      setError(resetError);
+      return;
+    }
+    haptics.success();
     useDialogStore.getState().show({
       title: 'Check your email',
       message: `If an account exists for ${email.trim()}, we've sent a link to reset your password.`,
@@ -37,7 +51,10 @@ export default function ForgotPassword() {
 
         <TextInput
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setError(null);
+          }}
           placeholder="Email"
           placeholderTextColor={colors.textSecondary}
           autoCapitalize="none"
@@ -45,12 +62,18 @@ export default function ForgotPassword() {
           style={styles.input}
         />
 
+        {!!error && <Text style={styles.error}>{error}</Text>}
+
         <Pressable
-          style={[styles.primaryButton, !email.trim() && styles.primaryButtonDisabled]}
+          style={[styles.primaryButton, (submitting || !email.trim()) && styles.primaryButtonDisabled]}
           onPress={handleSendResetLink}
-          disabled={!email.trim()}
+          disabled={submitting || !email.trim()}
         >
-          <Text style={styles.primaryButtonText}>Send reset link</Text>
+          {submitting ? (
+            <ActivityIndicator color={colors.bgPrimary} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Send reset link</Text>
+          )}
         </Pressable>
       </View>
     </SafeAreaView>
@@ -85,6 +108,10 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       lineHeight: 20,
       marginBottom: spacing.sm,
+    },
+    error: {
+      color: colors.moneyOut,
+      fontSize: 13,
     },
     input: {
       backgroundColor: colors.bgSurface,
