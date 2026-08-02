@@ -6,6 +6,13 @@ import { Model } from '@nozbe/watermelondb';
 export default class Expense extends Model {
   static table = 'expenses';
 
+  get userId(): string | undefined {
+    return (this._getRaw('user_id') as string | null) ?? undefined;
+  }
+  set userId(value: string | undefined) {
+    this._setRaw('user_id', value ?? null);
+  }
+
   get amount(): number {
     return this._getRaw('amount') as number;
   }
