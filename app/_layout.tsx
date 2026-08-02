@@ -12,7 +12,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
-import { seedIfEmpty } from '../src/db/seed';
 import { applyGlobalFont } from '../src/lib/applyGlobalFont';
 import { parseAuthTokensFromUrl } from '../src/lib/authDeepLink';
 import { useAppFlowStore } from '../src/store/useAppFlowStore';
@@ -34,6 +33,8 @@ function handleAuthDeepLink(url: string) {
 export default function RootLayout() {
   const isSignedIn = useAppFlowStore((s) => s.isSignedIn);
   const passwordRecovery = useAppFlowStore((s) => s.passwordRecovery);
+  const authReady = useAppFlowStore((s) => s.authReady);
+  const userId = useAppFlowStore((s) => s.user?.id);
   const colors = useTheme();
   const resolvedTheme = useResolvedTheme();
   const hydrateExpenses = useExpensesStore((s) => s.hydrate);
@@ -48,10 +49,9 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    seedIfEmpty()
-      .then(() => Promise.all([hydrateExpenses(), hydratePeople()]))
-      .finally(() => setDbReady(true));
-  }, [hydrateExpenses, hydratePeople]);
+    if (!authReady) return;
+    Promise.all([hydrateExpenses(), hydratePeople()]).finally(() => setDbReady(true));
+  }, [authReady, userId, hydrateExpenses, hydratePeople]);
 
   useEffect(() => {
     return useSettingsStore.persist.onFinishHydration(() => setSettingsReady(true));
