@@ -1,22 +1,50 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Wordmark } from '../../src/components/Wordmark';
 import { haptics } from '../../src/lib/haptics';
 import { useAppFlowStore } from '../../src/store/useAppFlowStore';
+import { useDialogStore } from '../../src/store/useDialogStore';
 import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const signIn = useAppFlowStore((s) => s.signIn);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const signUp = useAppFlowStore((s) => s.signUp);
   const colors = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  function handleContinue() {
+  async function handleSignUp() {
+    if (submitting || !email.trim() || !password) return;
+    setSubmitting(true);
+    setError(null);
+    const { error: signUpError, needsEmailConfirmation } = await signUp(email.trim(), password);
+    setSubmitting(false);
+    if (signUpError) {
+      setError(signUpError);
+      return;
+    }
     haptics.success();
-    signIn();
+    if (needsEmailConfirmation) {
+      useDialogStore.getState().show({
+        title: 'Check your email',
+        message: `We sent a confirmation link to ${email.trim()}. Confirm it, then sign in.`,
+        confirmText: 'Got it',
+        onConfirm: () => router.replace('/sign-in'),
+      });
+    }
+  }
+
+  function handleGoogleSignIn() {
+    useDialogStore.getState().show({
+      title: 'Continue with Google',
+      message: 'Google sign-in is coming soon — use email and password for now.',
+      confirmText: 'Got it',
+      onConfirm: () => {},
+    });
   }
 
   return (
@@ -26,11 +54,14 @@ export default function SignUp() {
           <Wordmark size={30} />
         </View>
         <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.subtitle}>Your data stays on your device.</Text>
+        <Text style={styles.subtitle}>Your data, synced everywhere.</Text>
 
         <TextInput
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setError(null);
+          }}
           placeholder="Email"
           placeholderTextColor={colors.textSecondary}
           autoCapitalize="none"
@@ -39,18 +70,31 @@ export default function SignUp() {
         />
         <TextInput
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setError(null);
+          }}
           placeholder="Password"
           placeholderTextColor={colors.textSecondary}
           secureTextEntry
           style={styles.input}
         />
 
-        <Pressable style={styles.primaryButton} onPress={handleContinue}>
-          <Text style={styles.primaryButtonText}>Continue</Text>
+        {!!error && <Text style={styles.error}>{error}</Text>}
+
+        <Pressable
+          style={[styles.primaryButton, (submitting || !email.trim() || !password) && styles.primaryButtonDisabled]}
+          onPress={handleSignUp}
+          disabled={submitting || !email.trim() || !password}
+        >
+          {submitting ? (
+            <ActivityIndicator color={colors.bgPrimary} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Continue</Text>
+          )}
         </Pressable>
 
-        <Pressable style={styles.secondaryButton} onPress={handleContinue}>
+        <Pressable style={styles.secondaryButton} onPress={handleGoogleSignIn}>
           <Text style={styles.secondaryButtonText}>Continue with Google</Text>
         </Pressable>
 
@@ -93,6 +137,10 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       marginBottom: spacing.sm,
     },
+    error: {
+      color: colors.moneyOut,
+      fontSize: 13,
+    },
     input: {
       backgroundColor: colors.bgSurface,
       borderRadius: radius.button,
@@ -106,6 +154,9 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: spacing.sm + 7,
       alignItems: 'center',
       marginTop: spacing.xs,
+    },
+    primaryButtonDisabled: {
+      opacity: 0.5,
     },
     primaryButtonText: {
       color: colors.bgPrimary,

@@ -1,22 +1,42 @@
 import { Link, router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Wordmark } from '../../src/components/Wordmark';
 import { haptics } from '../../src/lib/haptics';
 import { useAppFlowStore } from '../../src/store/useAppFlowStore';
+import { useDialogStore } from '../../src/store/useDialogStore';
 import { radius, spacing, ThemeColors, useTheme } from '../../src/theme';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const signIn = useAppFlowStore((s) => s.signIn);
   const colors = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  function handleSignIn() {
+  async function handleSignIn() {
+    if (submitting || !email.trim() || !password) return;
+    setSubmitting(true);
+    setError(null);
+    const { error: signInError } = await signIn(email.trim(), password);
+    setSubmitting(false);
+    if (signInError) {
+      setError(signInError);
+      return;
+    }
     haptics.success();
-    signIn();
+  }
+
+  function handleGoogleSignIn() {
+    useDialogStore.getState().show({
+      title: 'Continue with Google',
+      message: 'Google sign-in is coming soon — use email and password for now.',
+      confirmText: 'Got it',
+      onConfirm: () => {},
+    });
   }
 
   return (
@@ -30,7 +50,10 @@ export default function SignIn() {
 
         <TextInput
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setError(null);
+          }}
           placeholder="Email"
           placeholderTextColor={colors.textSecondary}
           autoCapitalize="none"
@@ -39,12 +62,17 @@ export default function SignIn() {
         />
         <TextInput
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setError(null);
+          }}
           placeholder="Password"
           placeholderTextColor={colors.textSecondary}
           secureTextEntry
           style={styles.input}
         />
+
+        {!!error && <Text style={styles.error}>{error}</Text>}
 
         <Pressable
           onPress={() => {
@@ -56,11 +84,19 @@ export default function SignIn() {
           <Text style={styles.forgotPassword}>Forgot password?</Text>
         </Pressable>
 
-        <Pressable style={styles.primaryButton} onPress={handleSignIn}>
-          <Text style={styles.primaryButtonText}>Sign in</Text>
+        <Pressable
+          style={[styles.primaryButton, (submitting || !email.trim() || !password) && styles.primaryButtonDisabled]}
+          onPress={handleSignIn}
+          disabled={submitting || !email.trim() || !password}
+        >
+          {submitting ? (
+            <ActivityIndicator color={colors.bgPrimary} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Sign in</Text>
+          )}
         </Pressable>
 
-        <Pressable style={styles.secondaryButton} onPress={handleSignIn}>
+        <Pressable style={styles.secondaryButton} onPress={handleGoogleSignIn}>
           <Text style={styles.secondaryButtonText}>Continue with Google</Text>
         </Pressable>
 
@@ -103,6 +139,10 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       marginBottom: spacing.sm,
     },
+    error: {
+      color: colors.moneyOut,
+      fontSize: 13,
+    },
     input: {
       backgroundColor: colors.bgSurface,
       borderRadius: radius.button,
@@ -122,6 +162,9 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: spacing.sm + 7,
       alignItems: 'center',
       marginTop: spacing.xs,
+    },
+    primaryButtonDisabled: {
+      opacity: 0.5,
     },
     primaryButtonText: {
       color: colors.bgPrimary,
